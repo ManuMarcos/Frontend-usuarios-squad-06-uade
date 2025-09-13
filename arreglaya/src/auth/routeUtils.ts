@@ -1,4 +1,4 @@
-// routeUtils.ts
+// src/auth/routeUtils.ts
 export type UiRole = 'customer' | 'contractor' | 'admin'
 export type ApiRole = 'CLIENTE' | 'PROVEEDOR' | 'ADMIN'
 
@@ -8,11 +8,11 @@ const apiToUi: Record<ApiRole, UiRole> = {
   ADMIN: 'admin',
 }
 
-export function toUiRole(role?: UiRole | ApiRole | null): UiRole {
+export function toUiRole(role?: UiRole | ApiRole | string | null): UiRole {
   if (!role) return 'customer'
   if (role === 'customer' || role === 'contractor' || role === 'admin') return role
-  const r = String(role).toUpperCase() as ApiRole
-  return apiToUi[r] ?? 'customer'
+  const norm = String(role).trim().toUpperCase() as ApiRole   // 👈 trim() agregado
+  return apiToUi[norm] ?? 'customer'
 }
 
 const roleHome: Record<UiRole, string> = {
@@ -21,6 +21,6 @@ const roleHome: Record<UiRole, string> = {
   admin: '/admin',
 }
 
-export function homeForRole(role?: UiRole | ApiRole | null) {
+export function homeForRole(role?: UiRole | ApiRole | string | null) {
   return roleHome[toUiRole(role)]
 }
