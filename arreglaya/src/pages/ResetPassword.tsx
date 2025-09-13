@@ -1,14 +1,14 @@
 import React from 'react'
-import { Paper, Stack, Typography, Button, Grid, Alert } from '@mui/material'
+import { Paper, Stack, Typography, Button, Grid, Alert, TextField } from '@mui/material'
 import PasswordField from '../components/PasswordField'
 import PasswordStrengthBar from '../components/PasswordStrengthBar'
-import { resetPassword } from '../api/auth'
-import { useParams, useNavigate } from 'react-router-dom'
+import { resetUserPassword } from '../api/auth'
+import { useNavigate } from 'react-router-dom'
 import { checkPasswordCriteria } from '../utils/validators'
 
 export default function ResetPassword(){
-  const { token } = useParams<{ token: string }>()
   const navigate = useNavigate()
+  const [userId, setUserId] = React.useState('')
   const [password, setPassword] = React.useState('')
   const [confirm, setConfirm] = React.useState('')
   const [loading, setLoading] = React.useState(false)
@@ -21,11 +21,12 @@ export default function ResetPassword(){
   async function onSubmit(e: React.FormEvent){
     e.preventDefault()
     setError(null); setMessage(null)
+    if(!userId) return setError('Ingresá el ID de usuario')
     if(!pwOk) return setError('La contraseña no cumple los requisitos')
     if(password !== confirm) return setError('Las contraseñas no coinciden')
     setLoading(true)
     try{
-      await resetPassword(token || '', password)
+      await resetUserPassword(Number(userId), password)
       setMessage('¡Contraseña restablecida!')
       setTimeout(()=> navigate('/login'), 900)
     }catch(err:any){
@@ -41,12 +42,13 @@ export default function ResetPassword(){
           {message && <Alert severity="success" sx={{mb:2}}>{message}</Alert>}
           {error && <Alert severity="error" sx={{mb:2}}>{error}</Alert>}
           <Stack component="form" spacing={2} onSubmit={onSubmit}>
+            <TextField label="ID de usuario" value={userId} onChange={e=>setUserId(e.target.value)} required />
             <PasswordField label="Nueva contraseña" value={password} onChange={e=>setPassword(e.target.value)} required />
             <PasswordStrengthBar password={password} />
             <PasswordField label="Confirmar contraseña" value={confirm} onChange={e=>setConfirm(e.target.value)} required />
             <Stack direction="row" spacing={2}>
               <Button variant="outlined" onClick={()=>navigate('/login')}>Ir a iniciar sesión</Button>
-              <Button type="submit" disabled={loading || !pwOk || password !== confirm}>
+              <Button type="submit" disabled={loading || !userId || !pwOk || password !== confirm}>
                 {loading ? 'Guardando…' : 'Guardar contraseña'}
               </Button>
             </Stack>

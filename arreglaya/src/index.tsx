@@ -25,7 +25,6 @@ import Privacy from './pages/Privacy'
 import Profile from './pages/profile/Profile'
 import Logout from './pages/Logout'
 import GuestRoute from './auth/GuestRoute'
-import { Role } from './auth/AuthProvider'
 
 const router = createBrowserRouter([
   {

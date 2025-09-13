@@ -5,6 +5,7 @@ import {
 } from '@mui/material'
 import { Link as RouterLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
+import { toUiRole } from '../auth/routeUtils'
 
 import PersonOutline from '@mui/icons-material/PersonOutline'
 import PeopleOutline from '@mui/icons-material/PeopleOutline'
@@ -25,14 +26,17 @@ export default function AppHeader() {
   const handleClose = () => setAnchorEl(null)
   const go = (path: string) => { navigate(path); handleClose() }
 
-  // Opciones por rol (solo dentro del menú)
+  const uiRole = toUiRole(user?.role as any)
+  const fullName = user ? (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.name || user.email) : ''
+  const avatarInitial = (user?.firstName || user?.name || user?.email || '?')[0]?.toUpperCase() || '?'
+
   const roleItems: Array<{ label: string; to?: string; icon: React.ReactNode; action?: () => void }> = []
-  if (user?.role === 'customer') roleItems.push({ label: 'Contratistas', to: '/contratistas', icon: <PeopleOutline /> })
-  if (user?.role === 'contractor') {
+  if (uiRole === 'customer') roleItems.push({ label: 'Contratistas', to: '/contratistas', icon: <PeopleOutline /> })
+  if (uiRole === 'contractor') {
     roleItems.push({ label: 'Trabajos', to: '/trabajos', icon: <WorkOutline /> })
     roleItems.push({ label: 'Solicitudes', to: '/solicitudes', icon: <AssignmentTurnedIn /> })
   }
-  if (user?.role === 'admin') roleItems.push({ label: 'Panel Admin', to: '/admin', icon: <Dashboard /> })
+  if (uiRole === 'admin') roleItems.push({ label: 'Panel Admin', to: '/admin', icon: <Dashboard /> })
 
   return (
     <AppBar position="static" color="primary">
@@ -47,7 +51,6 @@ export default function AppHeader() {
           Home<b>Fix</b>
         </Typography>
 
-        {/* Trigger de cuenta (Avatar + etiqueta + chevron) */}
         <Tooltip title={open ? 'Cerrar menú de cuenta' : 'Abrir menú de cuenta'}>
           <ButtonBase
             onClick={handleOpen}
@@ -67,25 +70,25 @@ export default function AppHeader() {
             }}
           >
             <Avatar sx={{ bgcolor: '#00000022', width: 32, height: 32 }}>
-              {user?.name?.[0]?.toUpperCase() || '?'}
+              {avatarInitial}
             </Avatar>
             <Typography
               variant="body2"
               sx={{
                 display: { xs: 'none', sm: 'block' },
-                maxWidth: 180,
+                maxWidth: 200,
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis'
               }}
+              title={fullName || 'Invitado'}
             >
-              {user ? 'Mi cuenta' : 'Invitado'}
+              {user ? fullName : 'Invitado'}
             </Typography>
             {open ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
           </ButtonBase>
         </Tooltip>
 
-        {/* Menú de cuenta */}
         <Menu
           anchorEl={anchorEl}
           id="account-menu"
@@ -108,18 +111,16 @@ export default function AppHeader() {
             </>
           ) : (
             <>
-              {/* Perfil con subtexto de email */}
               <MenuItem onClick={() => go('/perfil')}>
                 <ListItemIcon><PersonOutline fontSize="small" /></ListItemIcon>
-                <Stack spacing={0} sx={{ minWidth: 160 }}>
-                  <Typography>Perfil</Typography>
+                <Stack spacing={0} sx={{ minWidth: 180 }}>
+                  <Typography>{fullName || 'Perfil'}</Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
                     {user.email}
                   </Typography>
                 </Stack>
               </MenuItem>
 
-              {/* Opciones específicas por rol */}
               {roleItems.map(item => (
                 <MenuItem
                   key={item.label}
@@ -136,7 +137,6 @@ export default function AppHeader() {
                 <ListItemIcon><LogoutIcon fontSize="small" /></ListItemIcon>
                 Cerrar sesión
               </MenuItem>
-
             </>
           )}
         </Menu>

@@ -1,3 +1,4 @@
+// src/pages/profile/CustomerProfile.tsx
 import React from 'react'
 import {
   Paper, Stack, Typography, Avatar, Chip, TextField, Button, FormControl,
@@ -8,47 +9,53 @@ import { useAuth } from '../../auth/AuthProvider'
 import { loadProfile, saveProfile, clearProfile } from '../../utils/profile'
 import { BARRIOS_CABA } from '../../constants'
 import { useNavigate } from 'react-router-dom'
-import { deleteAccountSelf } from '../../api/users'
 
 export default function CustomerProfile(){
   const { user, logout } = useAuth()
-  const navigate=useNavigate()
+  const navigate = useNavigate()
 
-  const [edit,setEdit]=React.useState(false)
-  const base=loadProfile()
-  const [name,setName]=React.useState(base.name || user?.name || '')
-  const [email]=React.useState(user?.email || base.email || '')
-  const [barrio,setBarrio]=React.useState((base as any).barrio || '')
-  const [phone,setPhone]=React.useState((base as any).phone || '')
+  // 👇 clave única por usuario
+  const email = user?.email || ''
+  const base  = loadProfile(email)
 
-  // Baja de cuenta
-  const [openDelete, setOpenDelete] = React.useState(false)
-  const [ackDelete, setAckDelete] = React.useState(false)
-  const [busyDelete, setBusyDelete] = React.useState(false)
+  const fullNameFromUser =
+    (user as any)?.firstName && (user as any)?.lastName
+      ? `${(user as any).firstName} ${(user as any).lastName}`
+      : (user as any)?.name
+
+  const [edit, setEdit]     = React.useState(false)
+  const [name, setName]     = React.useState(base.name || fullNameFromUser || '')
+  const [barrio, setBarrio] = React.useState((base as any).barrio || '')
+  const [phone, setPhone]   = React.useState((base as any).phone || '')
+
+  const [openDelete, setOpenDelete]   = React.useState(false)
+  const [ackDelete, setAckDelete]     = React.useState(false)
+  const [busyDelete, setBusyDelete]   = React.useState(false)
 
   function save(){
-    saveProfile({ name, email, role:'customer', barrio, phone })
+    // guarda el perfil asociado al email del usuario logueado
+    saveProfile(email, { name, email, role:'customer', barrio, phone })
     setEdit(false)
   }
 
   async function doDelete(){
-    if(!user) return
     setBusyDelete(true)
     try{
-      await deleteAccountSelf({ id: user.id, email: user.email })
-    }finally{
-      // limpiar estado local y cerrar sesión
-      clearProfile()
+      clearProfile(email) // borra solo mi perfil local
       logout()
       navigate('/', { replace: true })
+    } finally {
+      setBusyDelete(false)
     }
   }
+
+  const avatarInitial = (name || email || '?')[0]?.toUpperCase() || '?'
 
   return (
     <Paper sx={{p:3}}>
       <Stack spacing={2}>
         <Stack direction="row" spacing={2} alignItems="center">
-          <Avatar sx={{ width:64, height:64 }}>{(name || email)[0]?.toUpperCase() || '?'}</Avatar>
+          <Avatar sx={{ width:64, height:64 }}>{avatarInitial}</Avatar>
           <Stack>
             <Typography variant="h5" fontWeight={800}>{name || 'Tu nombre'}</Typography>
             <Typography variant="body2" color="text.secondary">{email}</Typography>
@@ -63,17 +70,16 @@ export default function CustomerProfile(){
 
             <Stack direction="row" spacing={1} mt={2}>
               <Button variant="outlined" onClick={()=>setEdit(true)}>Editar</Button>
-              <Button color="error" variant="outlined" onClick={()=>{logout(); navigate('/', { replace: true })}}>Cerrar sesión</Button>
+              <Button color="error" variant="outlined" onClick={()=>{ logout(); navigate('/', { replace: true })}}>Cerrar sesión</Button>
             </Stack>
 
-            {/* Zona peligrosa: Baja de cuenta */}
             <Box sx={{mt:3, p:2, border:'1px solid', borderColor:'error.main', borderRadius:2}}>
               <Typography variant="subtitle2" color="error" gutterBottom>Dar de baja mi cuenta</Typography>
               <Typography variant="body2" color="text.secondary" mb={1}>
-                Esta acción es permanente y eliminará tu cuenta.
+                Esta acción limpiará tus datos locales y cerrará la sesión.
               </Typography>
               <Button color="error" variant="contained" onClick={()=>{ setAckDelete(false); setOpenDelete(true) }}>
-                Eliminar cuenta
+                Eliminar cuenta (local)
               </Button>
             </Box>
           </Stack>
@@ -96,16 +102,15 @@ export default function CustomerProfile(){
         )}
       </Stack>
 
-      {/* Diálogo de confirmación de baja */}
       <Dialog open={openDelete} onClose={()=>setOpenDelete(false)}>
         <DialogTitle>Confirmar baja de cuenta</DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{mb:1}}>
-            Vas a eliminar tu cuenta de forma permanente.
+            Esta acción limpiará tus datos locales y cerrará la sesión.
           </Typography>
           <FormControlLabel
             control={<Checkbox checked={ackDelete} onChange={e=>setAckDelete(e.target.checked)} />}
-            label="Entiendo las consecuencias y deseo continuar"
+            label="Entiendo y deseo continuar"
           />
         </DialogContent>
         <DialogActions>

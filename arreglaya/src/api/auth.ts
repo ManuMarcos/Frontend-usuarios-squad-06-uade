@@ -1,38 +1,48 @@
 import api from './http'
 
-const MOCK = process.env.REACT_APP_AUTH_MOCK === 'true'
+export type Role = 'CLIENTE' | 'PROVEEDOR' | 'ADMIN'
 
 export interface RegisterDTO {
-  name: string
   email: string
   password: string
-  role: 'customer' | 'contractor'
-  // extended fields are handled client-side
+  firstName: string
+  lastName: string
+  phoneNumber?: string
+  address?: string
+  role: Role
+}
+
+export async function login(email: string, password: string) {
+  const { data } = await api.post('/api/users/login', { email, password })
+  // Respuesta según api.yaml: { token, userInfo, message }
+  return data as {
+    token: string
+    userInfo: {
+      id: number
+      email: string
+      firstName: string
+      lastName: string
+      phoneNumber?: string
+      address?: string
+      isActive: boolean
+      role: Role
+    }
+    message: string
+  }
 }
 
 export async function registerUser(dto: RegisterDTO) {
-  if (MOCK) {
-    await new Promise(r => setTimeout(r, 500))
-    return { ok: true }
+  const { data } = await api.post('/api/users/register', dto)
+  return data as {
+    message: string
+    email: string
+    role: Role
   }
-  const { data } = await api.post('/auth/register', dto)
-  return data
 }
 
-export async function requestPasswordReset(email: string) {
-  if (MOCK) {
-    await new Promise(r => setTimeout(r, 500))
-    return { ok: true }
-  }
-  const { data } = await api.post('/auth/forgot-password', { email })
-  return data
-}
-
-export async function resetPassword(token: string, password: string) {
-  if (MOCK) {
-    await new Promise(r => setTimeout(r, 500))
-    return { ok: true }
-  }
-  const { data } = await api.post('/auth/reset-password', { token, password })
-  return data
+export async function resetUserPassword(userId: number, newPassword: string) {
+  const { data } = await api.patch(`/api/users/${userId}/reset-password`, {
+    newPassword,
+  })
+  return data as string // "Contraseña cambiada con éxito"
 }

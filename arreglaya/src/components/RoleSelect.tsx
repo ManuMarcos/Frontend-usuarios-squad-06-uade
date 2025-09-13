@@ -1,6 +1,6 @@
 import React from 'react'
 import { FormControl, InputLabel, Select, MenuItem } from '@mui/material'
-import type { Role } from '../auth/AuthProvider'
+import type { Role } from '../api/users'
 import type { SxProps, Theme } from '@mui/material/styles'
 
 export default function RoleSelect({
@@ -22,9 +22,9 @@ export default function RoleSelect({
         label={label}
         onChange={e=>onChange(e.target.value as Role)}
       >
-        <MenuItem value="customer">Cliente</MenuItem>
-        <MenuItem value="contractor">Contratista</MenuItem>
-        <MenuItem value="admin">Admin</MenuItem>
+        <MenuItem value="CLIENTE">Cliente</MenuItem>
+        <MenuItem value="PROVEEDOR">Contratista</MenuItem>
+        <MenuItem value="ADMIN">Admin</MenuItem>
       </Select>
     </FormControl>
   )

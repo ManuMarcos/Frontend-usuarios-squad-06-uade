@@ -1,3 +1,4 @@
+// src/pages/profile/ContractorProfile.tsx
 import React from 'react'
 import {
   Paper, Stack, Typography, Avatar, Chip, TextField, Button, FormControl,
@@ -8,49 +9,55 @@ import { useAuth } from '../../auth/AuthProvider'
 import { loadProfile, saveProfile, clearProfile } from '../../utils/profile'
 import { BARRIOS_CABA, PROFESSIONS } from '../../constants'
 import { useNavigate } from 'react-router-dom'
-import { deleteAccountSelf } from '../../api/users'
 
 export default function ContractorProfile(){
   const { user, logout } = useAuth()
-  const navigate=useNavigate()
+  const navigate = useNavigate()
 
-  const [edit,setEdit]=React.useState(false)
-  const base=loadProfile()
-  const [name,setName]=React.useState(base.name || user?.name || '')
-  const [email]=React.useState(user?.email || base.email || '')
-  const [barrio,setBarrio]=React.useState((base as any).barrio || '')
-  const [profession,setProfession]=React.useState((base as any).profession || '')
-  const [description,setDescription]=React.useState((base as any).description || '')
-  const [skills,setSkills]=React.useState<string>((base as any).skills?.join(', ') || '')
+  const email = user?.email || ''
+  const base = loadProfile(email)
 
-  // Baja de cuenta
+  const fullNameFromUser =
+    (user as any)?.firstName && (user as any)?.lastName
+      ? `${(user as any).firstName} ${(user as any).lastName}`
+      : (user as any)?.name
+
+  const [edit, setEdit] = React.useState(false)
+  const [name, setName] = React.useState(base.name || fullNameFromUser || '')
+  const [barrio, setBarrio] = React.useState((base as any).barrio || '')
+  const [profession, setProfession] = React.useState((base as any).profession || '')
+  const [description, setDescription] = React.useState((base as any).description || '')
+  const [skills, setSkills] = React.useState<string>((base as any).skills?.join(', ') || '')
+
   const [openDelete, setOpenDelete] = React.useState(false)
   const [ackDelete, setAckDelete] = React.useState(false)
   const [busyDelete, setBusyDelete] = React.useState(false)
 
   function save(){
-    const skillsArr=skills.split(',').map(s=>s.trim()).filter(Boolean)
-    saveProfile({ name, email, role:'contractor', barrio, profession, description, skills: skillsArr })
+    if(!email) return
+    const skillsArr = skills.split(',').map(s => s.trim()).filter(Boolean)
+    saveProfile(email, { name, email, role: 'contractor', barrio, profession, description, skills: skillsArr })
     setEdit(false)
   }
 
   async function doDelete(){
-    if(!user) return
     setBusyDelete(true)
     try{
-      await deleteAccountSelf({ id: user.id, email: user.email })
-    }finally{
-      clearProfile()
+      clearProfile(email)
       logout()
       navigate('/', { replace: true })
+    } finally {
+      setBusyDelete(false)
     }
   }
+
+  const avatarInitial = (name || email || '?')[0]?.toUpperCase() || '?'
 
   return (
     <Paper sx={{p:3}}>
       <Stack spacing={2}>
         <Stack direction="row" spacing={2} alignItems="center">
-          <Avatar sx={{ width:64, height:64 }}>{(name || email)[0]?.toUpperCase() || '?'}</Avatar>
+          <Avatar sx={{ width:64, height:64 }}>{avatarInitial}</Avatar>
           <Stack>
             <Typography variant="h5" fontWeight={800}>{name || 'Tu nombre'}</Typography>
             <Typography variant="body2" color="text.secondary">{email}</Typography>
@@ -67,17 +74,16 @@ export default function ContractorProfile(){
 
             <Stack direction="row" spacing={1} mt={2}>
               <Button variant="outlined" onClick={()=>setEdit(true)}>Editar</Button>
-              <Button color="error" variant="outlined" onClick={()=>{logout(); navigate('/', { replace: true })}}>Cerrar sesión</Button>
+              <Button color="error" variant="outlined" onClick={()=>{ logout(); navigate('/', { replace: true })}}>Cerrar sesión</Button>
             </Stack>
 
-            {/* Zona peligrosa: Baja de cuenta */}
             <Box sx={{mt:3, p:2, border:'1px solid', borderColor:'error.main', borderRadius:2}}>
               <Typography variant="subtitle2" color="error" gutterBottom>Dar de baja mi cuenta</Typography>
               <Typography variant="body2" color="text.secondary" mb={1}>
-                Esta acción es permanente y eliminará tu cuenta.
+                Esta acción limpiará tus datos locales y cerrará la sesión.
               </Typography>
               <Button color="error" variant="contained" onClick={()=>{ setAckDelete(false); setOpenDelete(true) }}>
-                Eliminar cuenta
+                Eliminar cuenta (local)
               </Button>
             </Box>
           </Stack>
@@ -108,16 +114,15 @@ export default function ContractorProfile(){
         )}
       </Stack>
 
-      {/* Diálogo de confirmación de baja */}
       <Dialog open={openDelete} onClose={()=>setOpenDelete(false)}>
         <DialogTitle>Confirmar baja de cuenta</DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{mb:1}}>
-            Vas a eliminar tu cuenta de forma permanente.
+            Esta acción limpiará tus datos locales y cerrará la sesión.
           </Typography>
           <FormControlLabel
             control={<Checkbox checked={ackDelete} onChange={e=>setAckDelete(e.target.checked)} />}
-            label="Entiendo las consecuencias y deseo continuar"
+            label="Entiendo y deseo continuar"
           />
         </DialogContent>
         <DialogActions>
