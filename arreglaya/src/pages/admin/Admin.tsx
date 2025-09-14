@@ -18,12 +18,12 @@ type UiUser = { id: number; name: string; email: string; role: UiRole }
 // Mapas de rol (API → UI y UI → API)
 const apiToUi: Record<ApiRole, UiRole> = {
   CLIENTE: 'customer',
-  PROVEEDOR: 'contractor',
+  PRESTADOR: 'contractor',
   ADMIN: 'admin',
 }
 const uiToApi: Record<Exclude<UiRole, 'admin'>, ApiRole> = {
   customer: 'CLIENTE',
-  contractor: 'PROVEEDOR',
+  contractor: 'PRESTADOR',
 }
 
 function toUiUser(u: UserDTO): UiUser {

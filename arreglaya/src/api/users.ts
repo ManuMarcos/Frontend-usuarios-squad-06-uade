@@ -1,6 +1,6 @@
 import api from './http'
 
-export type Role = 'CLIENTE' | 'PROVEEDOR' | 'ADMIN'
+export type Role = 'CLIENTE' | 'PRESTADOR' | 'ADMIN'
 
 export interface UserDTO {
   userId: number
