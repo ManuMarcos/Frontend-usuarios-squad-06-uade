@@ -48,7 +48,7 @@ export default function AppHeader() {
           to="/"
           color="inherit"
         >
-          Home<b>Fix</b>
+          Arregla<b>YA</b>
         </Typography>
 
         <Tooltip title={open ? 'Cerrar menú de cuenta' : 'Abrir menú de cuenta'}>
