@@ -1,33 +1,25 @@
+// src/pages/Login.tsx
 import React from 'react'
-import { Paper, Grid, Stack, Typography, TextField, Button } from '@mui/material'
+import { Paper, Grid, Stack, Typography, TextField, Button, Alert } from '@mui/material'
 import { useAuth } from '../auth/AuthProvider'
-import { useNavigate, useLocation } from 'react-router-dom'
-import { homeForRole } from '../auth/routeUtils'
+import { useNavigate } from 'react-router-dom'
 
 export default function Login() {
   const { login } = useAuth()
-  const [email, setEmail] = React.useState('usuario@example.com')
+  const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
+  const [error, setError] = React.useState<string | null>(null)
   const navigate = useNavigate()
-  const location = useLocation()
-  const from = (location.state as any)?.from?.pathname as string | undefined
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
-    await login(email, password)
-    const raw = localStorage.getItem('homefix.user')
-    const roleApi = raw ? JSON.parse(raw).role : 'CLIENTE'
-
-    // Mapeo de roles API → roles front
-    const roleMap: Record<string, 'customer' | 'contractor' | 'admin'> = {
-      CLIENTE: 'customer',
-      PROVEEDOR: 'contractor',
-      ADMIN: 'admin',
+    try {
+      setError(null)
+      await login(email, password)
+      navigate('/perfil', { replace: true })
+    } catch {
+      setError("El correo electrónico o la contraseña no son correctos. Intentalo de nuevo.")
     }
-    const role = roleMap[roleApi] || 'customer'
-
-    const dest = from || homeForRole(role)
-    navigate(dest, { replace: true })
   }
 
   return (
@@ -54,7 +46,11 @@ export default function Login() {
               fullWidth
               required
             />
-            <Button type="submit">Entrar</Button>
+
+            {error && <Alert severity="error">{error}</Alert>} 
+
+            <Button type="submit" variant="contained">Entrar</Button>
+
             <Stack direction="row" justifyContent="space-between">
               <Typography variant="body2">
                 ¿No estás registrado? <a href="/register">Registrarse</a>
@@ -74,7 +70,7 @@ export default function Login() {
       >
         <Stack spacing={1} textAlign="center">
           <Typography variant="h3" fontWeight={900}>
-            Home<b>Fix</b>
+            Arregla<b>YA</b>
           </Typography>
           <Typography>
             Conectamos contratistas con personas que necesitan servicios.

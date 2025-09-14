@@ -16,8 +16,8 @@ export function toUiRole(role?: UiRole | ApiRole | string | null): UiRole {
 }
 
 const roleHome: Record<UiRole, string> = {
-  customer: '/contratistas',
-  contractor: '/trabajos',
+  customer: '/perfil',
+  contractor: '/perfil',
   admin: '/admin',
 }
 
