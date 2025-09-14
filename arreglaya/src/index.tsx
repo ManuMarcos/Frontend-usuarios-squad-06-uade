@@ -29,7 +29,7 @@ import GuestRoute from './auth/GuestRoute'
 const router = createBrowserRouter([
   {
     path: '/', element: <App />, children: [
-      { index: true, element: <Landing /> },
+      { index: true, element: <GuestRoute><Login /></GuestRoute> },
       { path: 'login', element: <GuestRoute><Login /></GuestRoute> },
       { path: 'register', element: <GuestRoute><Register /></GuestRoute> },
       { path: 'recuperar', element: <GuestRoute><ForgotPassword /></GuestRoute> },

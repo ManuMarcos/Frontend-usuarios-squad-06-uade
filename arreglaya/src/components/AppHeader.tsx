@@ -27,7 +27,7 @@ export default function AppHeader() {
   const go = (path: string) => { navigate(path); handleClose() }
 
   if (!user) {
-    // 🔥 Solo título si no hay sesión
+    
     return (
       <AppBar position="static" color="primary">
         <Toolbar>
@@ -60,8 +60,7 @@ export default function AppHeader() {
         <Typography
           variant="h5"
           sx={{ fontWeight: 900, letterSpacing: 0.5, flex: 1 }}
-          component={RouterLink}
-          to="/"
+          
           color="inherit"
         >
           Arregla<b>Ya</b>
