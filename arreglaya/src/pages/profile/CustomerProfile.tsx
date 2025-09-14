@@ -73,15 +73,7 @@ export default function CustomerProfile(){
               <Button color="error" variant="outlined" onClick={()=>{ logout(); navigate('/', { replace: true })}}>Cerrar sesión</Button>
             </Stack>
 
-            <Box sx={{mt:3, p:2, border:'1px solid', borderColor:'error.main', borderRadius:2}}>
-              <Typography variant="subtitle2" color="error" gutterBottom>Dar de baja mi cuenta</Typography>
-              <Typography variant="body2" color="text.secondary" mb={1}>
-                Esta acción limpiará tus datos locales y cerrará la sesión.
-              </Typography>
-              <Button color="error" variant="contained" onClick={()=>{ setAckDelete(false); setOpenDelete(true) }}>
-                Eliminar cuenta (local)
-              </Button>
-            </Box>
+          
           </Stack>
         ) : (
           <Stack spacing={2}>
@@ -102,24 +94,7 @@ export default function CustomerProfile(){
         )}
       </Stack>
 
-      <Dialog open={openDelete} onClose={()=>setOpenDelete(false)}>
-        <DialogTitle>Confirmar baja de cuenta</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" sx={{mb:1}}>
-            Esta acción limpiará tus datos locales y cerrará la sesión.
-          </Typography>
-          <FormControlLabel
-            control={<Checkbox checked={ackDelete} onChange={e=>setAckDelete(e.target.checked)} />}
-            label="Entiendo y deseo continuar"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={()=>setOpenDelete(false)} disabled={busyDelete}>Cancelar</Button>
-          <Button color="error" variant="contained" disabled={!ackDelete || busyDelete} onClick={doDelete}>
-            {busyDelete ? 'Eliminando…' : 'Eliminar definitivamente'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+     
     </Paper>
   )
 }
