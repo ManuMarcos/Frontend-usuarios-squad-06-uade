@@ -1,3 +1,4 @@
+// src/components/AppHeader.tsx
 import React from 'react'
 import {
   AppBar, Toolbar, Typography, Stack, Avatar,
@@ -8,7 +9,6 @@ import { useAuth } from '../auth/AuthProvider'
 import { toUiRole } from '../auth/routeUtils'
 
 import PersonOutline from '@mui/icons-material/PersonOutline'
-import PeopleOutline from '@mui/icons-material/PeopleOutline'
 import WorkOutline from '@mui/icons-material/WorkOutline'
 import AssignmentTurnedIn from '@mui/icons-material/AssignmentTurnedIn'
 import Dashboard from '@mui/icons-material/Dashboard'
@@ -26,12 +26,28 @@ export default function AppHeader() {
   const handleClose = () => setAnchorEl(null)
   const go = (path: string) => { navigate(path); handleClose() }
 
-  const uiRole = toUiRole(user?.role as any)
-  const fullName = user ? (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.name || user.email) : ''
-  const avatarInitial = (user?.firstName || user?.name || user?.email || '?')[0]?.toUpperCase() || '?'
+  if (!user) {
+    // 🔥 Solo título si no hay sesión
+    return (
+      <AppBar position="static" color="primary">
+        <Toolbar>
+          <Typography
+            variant="h5"
+            sx={{ fontWeight: 900, letterSpacing: 0.5, flex: 1 }}
+            color="inherit"
+          >
+            Arregla<b>Ya</b>
+          </Typography>
+        </Toolbar>
+      </AppBar>
+    )
+  }
+
+  const uiRole = toUiRole(user.role)
+  const fullName = user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.name || user.email
+  const avatarInitial = (user.firstName || user.name || user.email || '?')[0]?.toUpperCase() || '?'
 
   const roleItems: Array<{ label: string; to?: string; icon: React.ReactNode; action?: () => void }> = []
-  if (uiRole === 'customer') roleItems.push({ label: 'Contratistas', to: '/contratistas', icon: <PeopleOutline /> })
   if (uiRole === 'contractor') {
     roleItems.push({ label: 'Trabajos', to: '/trabajos', icon: <WorkOutline /> })
     roleItems.push({ label: 'Solicitudes', to: '/solicitudes', icon: <AssignmentTurnedIn /> })
@@ -48,9 +64,10 @@ export default function AppHeader() {
           to="/"
           color="inherit"
         >
-          Arregla<b>YA</b>
+          Arregla<b>Ya</b>
         </Typography>
 
+        {/* Avatar + menú solo si hay sesión */}
         <Tooltip title={open ? 'Cerrar menú de cuenta' : 'Abrir menú de cuenta'}>
           <ButtonBase
             onClick={handleOpen}
@@ -64,9 +81,7 @@ export default function AppHeader() {
               alignItems: 'center',
               gap: 1,
               color: 'inherit',
-              transition: 'all .15s ease',
-              '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' },
-              '&:focus-visible': { outline: '2px solid rgba(255,255,255,0.6)', outlineOffset: 2 }
+              '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' }
             }}
           >
             <Avatar sx={{ bgcolor: '#00000022', width: 32, height: 32 }}>
@@ -81,9 +96,9 @@ export default function AppHeader() {
                 overflow: 'hidden',
                 textOverflow: 'ellipsis'
               }}
-              title={fullName || 'Invitado'}
+              title={fullName}
             >
-              {user ? fullName : 'Invitado'}
+              {fullName}
             </Typography>
             {open ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
           </ButtonBase>
@@ -98,47 +113,29 @@ export default function AppHeader() {
           transformOrigin={{ horizontal: 'right', vertical: 'top' }}
           anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
         >
-          {!user ? (
-            <>
-              <MenuItem onClick={() => go('/login')}>
-                <ListItemIcon><PersonOutline fontSize="small" /></ListItemIcon>
-                Iniciar sesión
-              </MenuItem>
-              <MenuItem onClick={() => go('/register')}>
-                <ListItemIcon><PeopleOutline fontSize="small" /></ListItemIcon>
-                Registrarse
-              </MenuItem>
-            </>
-          ) : (
-            <>
-              <MenuItem onClick={() => go('/perfil')}>
-                <ListItemIcon><PersonOutline fontSize="small" /></ListItemIcon>
-                <Stack spacing={0} sx={{ minWidth: 180 }}>
-                  <Typography>{fullName || 'Perfil'}</Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
-                    {user.email}
-                  </Typography>
-                </Stack>
-              </MenuItem>
+          <MenuItem onClick={() => go('/perfil')}>
+            <ListItemIcon><PersonOutline fontSize="small" /></ListItemIcon>
+            <Stack spacing={0} sx={{ minWidth: 180 }}>
+              <Typography>{fullName || 'Perfil'}</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
+                {user.email}
+              </Typography>
+            </Stack>
+          </MenuItem>
 
-              {roleItems.map(item => (
-                <MenuItem
-                  key={item.label}
-                  onClick={item.action ? item.action : () => go(item.to!)}
-                >
-                  <ListItemIcon>{item.icon}</ListItemIcon>
-                  {item.label}
-                </MenuItem>
-              ))}
+          {roleItems.map(item => (
+            <MenuItem key={item.label} onClick={item.action ? item.action : () => go(item.to!)}>
+              <ListItemIcon>{item.icon}</ListItemIcon>
+              {item.label}
+            </MenuItem>
+          ))}
 
-              <Divider />
+          <Divider />
 
-              <MenuItem onClick={() => { handleClose(); logout(); navigate('/', { replace: true }) }}>
-                <ListItemIcon><LogoutIcon fontSize="small" /></ListItemIcon>
-                Cerrar sesión
-              </MenuItem>
-            </>
-          )}
+          <MenuItem onClick={() => { handleClose(); logout(); navigate('/', { replace: true }) }}>
+            <ListItemIcon><LogoutIcon fontSize="small" /></ListItemIcon>
+            Cerrar sesión
+          </MenuItem>
         </Menu>
       </Toolbar>
     </AppBar>
