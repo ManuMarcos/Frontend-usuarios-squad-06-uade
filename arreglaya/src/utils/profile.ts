@@ -1,8 +1,20 @@
 // src/utils/profile.ts
 export type Role = 'customer' | 'contractor' | 'admin'
 
-export type BaseProfile = { name?: string; email?: string; role?: Role }
-export type CustomerProfile = BaseProfile & { barrio?: string; phone?: string }
+export type BaseProfile = {
+  name?: string
+  lastName?: string
+  email?: string
+  role?: Role
+  /** Documento Nacional de Identidad */
+  dni?: string
+  /** Teléfono (guardado con el nombre corto para no romper páginas existentes) */
+  phone?: string
+  /** Dirección postal */
+  address?: string
+}
+
+export type CustomerProfile = BaseProfile & { barrio?: string }
 export type ContractorProfile = BaseProfile & { barrio?: string; profession?: string; description?: string; skills?: string[] }
 export type AdminProfile = BaseProfile & { note?: string }
 export type AnyProfile = CustomerProfile | ContractorProfile | AdminProfile
@@ -16,7 +28,7 @@ function keyFor(email?: string){
 export function loadProfile(email?: string): AnyProfile {
   try{
     const raw = localStorage.getItem(keyFor(email))
-    return raw ? JSON.parse(raw) : {}
+    return raw ? JSON.parse(raw) as AnyProfile : {}
   }catch{
     return {}
   }

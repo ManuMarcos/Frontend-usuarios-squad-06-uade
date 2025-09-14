@@ -1,12 +1,13 @@
 import api from './http'
 
-export type Role = 'CLIENTE' | 'PROVEEDOR' | 'ADMIN'
+export type Role = 'CLIENTE' | 'PRESTADOR' | 'ADMIN'
 
 export interface RegisterDTO {
   email: string
   password: string
   firstName: string
   lastName: string
+  dni: string
   phoneNumber?: string
   address?: string
   role: Role
@@ -22,6 +23,7 @@ export async function login(email: string, password: string) {
       email: string
       firstName: string
       lastName: string
+      dni: string
       phoneNumber?: string
       address?: string
       isActive: boolean
