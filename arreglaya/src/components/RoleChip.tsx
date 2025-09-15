@@ -9,7 +9,8 @@ const map: Record<UiRole, { label: string; color: 'default' | 'primary' | 'secon
   admin:      { label: 'Admin',       color: 'warning'  },
 }
 
-export default function RoleChip({ role }: { role: UiRole }){
+export default function RoleChip({ role }: { role: UiRole }) {
   const r = map[role]
+  if (!r) return <Chip size="small" color="default" label={role || 'Desconocido'} />
   return <Chip size="small" color={r.color} label={r.label} />
 }

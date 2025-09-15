@@ -10,10 +10,13 @@ import ShieldIcon from '@mui/icons-material/AdminPanelSettings'
 
 import RoleChip from '../../components/RoleChip' // usa UiRole (customer|contractor|admin)
 
-import { getUserById, createUser, type UserDTO, type Role as ApiRole } from '../../api/users'
+import { getUserById, createUser, type UserDTO, type Role as ApiRole, getAllUsers } from '../../api/users'
+import AdminCreateUserDialog from '../../components/admin/AdmingCreateUserDialog'
+import DeactivateUserButton from '../../components/admin/DeactivateUserButton'
+import UserStatusChip from '../../components/admin/UserStatusChip'
 
 type UiRole = 'customer' | 'contractor' | 'admin'
-type UiUser = { id: number; name: string; email: string; role: UiRole }
+type UiUser = { userId: number; name: string; email: string; role: UiRole; isActive?: boolean }
 
 // Mapas de rol (API → UI y UI → API)
 const apiToUi: Record<ApiRole, UiRole> = {
@@ -28,24 +31,27 @@ const uiToApi: Record<Exclude<UiRole, 'admin'>, ApiRole> = {
 
 function toUiUser(u: UserDTO): UiUser {
   return {
-    id: u.userId,
+    userId: u.userId,
     name: `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email.split('@')[0],
     email: u.email,
     role: apiToUi[u.role],
+    isActive: u.active,
   }
 }
 
 export default function Admin() {
   const [rows, setRows] = React.useState<UiUser[]>([])
   const [loading, setLoading] = React.useState(false)
+  const [openCreate, setOpenCreate] = React.useState(false)
+
 
   // búsqueda por ID (el back sólo expone GET /api/users/{id})
   const [searchId, setSearchId] = React.useState<string>('')
 
   // diálogo de creación (ajustado al contrato del back)
   const [createDialog, setCreateDialog] =
-    React.useState<{ open: boolean; firstName: string; lastName: string; email: string; password: string; role: Exclude<UiRole,'admin'> }>({
-      open: false, firstName: '', lastName: '', email: '', password: '', role: 'customer'
+    React.useState<{ open: boolean; firstName: string; lastName: string; email: string; password: string; role: Exclude<UiRole, 'admin'>; dni: string; phoneNumber: string; address: string }>({
+      open: false, firstName: '', lastName: '', email: '', password: '', role: 'customer', dni: '', phoneNumber: '', address: ''
     })
 
   const [snack, setSnack] = React.useState<{ open: boolean; msg: string; type: 'success' | 'error' | 'info' }>({
@@ -63,7 +69,7 @@ export default function Admin() {
       const u = await getUserById(Number(searchId))
       const ui = toUiUser(u)
       setRows(prev => {
-        const idx = prev.findIndex(x => x.id === ui.id)
+        const idx = prev.findIndex(x => x.userId === ui.userId)
         if (idx >= 0) {
           const next = [...prev]; next[idx] = ui; return next
         }
@@ -84,15 +90,41 @@ export default function Admin() {
         password: createDialog.password,
         firstName: createDialog.firstName,
         lastName: createDialog.lastName,
+        dni: createDialog.dni,
+        phoneNumber: createDialog.phoneNumber,
+        address: createDialog.address,
         role: uiToApi[createDialog.role],
       }
       await createUser(payload)
       setSnack({ open: true, msg: 'Usuario creado.', type: 'success' })
-      setCreateDialog({ open: false, firstName: '', lastName: '', email: '', password: '', role: 'customer' })
+      setCreateDialog({ open: false, firstName: '', lastName: '', email: '', password: '', role: 'customer', dni: '', phoneNumber: '', address: '' })
     } catch (e: any) {
       setSnack({ open: true, msg: e?.message || 'No se pudo crear el usuario', type: 'error' })
     }
   }
+
+  async function handleCreated() {
+    // opción A: recargar la tabla
+    const users = await getAllUsers()
+
+    setRows(users.map(toUiUser))
+  }
+  // ...
+  React.useEffect(() => {
+    let alive = true
+      ; (async () => {
+        try {
+          const users = await getAllUsers()
+          console.log('Usuarios obtenidos:', users)
+          if (!alive) return
+          setRows(users.map(toUiUser))
+        } catch (e: any) {
+          setSnack({ open: true, msg: e?.response?.data || e?.message || 'No se pudo obtener usuarios', type: 'error' })
+        }
+      })()
+    return () => { alive = false }
+  }, [])
+
 
   return (
     <Paper sx={{ p: 3 }}>
@@ -105,7 +137,7 @@ export default function Admin() {
 
         <Stack direction="row" spacing={1}>
           <Tooltip title="Alta de usuario">
-            <IconButton onClick={() => setCreateDialog({ open: true, firstName: '', lastName: '', email: '', password: '', role: 'customer' })}>
+            <IconButton onClick={() => setOpenCreate(true)}>
               <AddIcon />
             </IconButton>
           </Tooltip>
@@ -139,12 +171,15 @@ export default function Admin() {
               <TableCell>Nombre</TableCell>
               <TableCell>Email</TableCell>
               <TableCell sx={{ width: 140 }}>Rol</TableCell>
+              <TableCell>Estado</TableCell>
+              <TableCell align="right">Acciones</TableCell>
+
             </TableRow>
           </TableHead>
           <TableBody>
             {rows.map(u => (
-              <TableRow key={u.id} hover>
-                <TableCell>{u.id}</TableCell>
+              <TableRow key={u.userId} hover>
+                <TableCell>{u.userId}</TableCell>
                 <TableCell>{u.name}</TableCell>
                 <TableCell>{u.email}</TableCell>
                 <TableCell>
@@ -152,6 +187,16 @@ export default function Admin() {
                     <RoleChip role={u.role} />
                   </Box>
                 </TableCell>
+                <TableCell><UserStatusChip isActive={u.isActive} /></TableCell>
+                <TableCell align="right">
+                  <DeactivateUserButton
+                    userId={u.userId}
+                    isActive={u.isActive}
+                    userEmail={u.email}
+                    onDone={(active) => setRows(prev => prev.map(r => r.userId === u.userId ? { ...r, isActive: active } : r))}
+                  />
+                </TableCell>
+
               </TableRow>
             ))}
             {!rows.length && (
@@ -167,39 +212,13 @@ export default function Admin() {
         </Table>
       </TableContainer>
 
+
       {/* Crear usuario */}
-      <Dialog open={createDialog.open} onClose={() => setCreateDialog({ open: false, firstName: '', lastName: '', email: '', password: '', role: 'customer' })}>
-        <DialogTitle>Crear usuario</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1, minWidth: 360 }}>
-            <TextField label="Nombre" value={createDialog.firstName} onChange={e => setCreateDialog(d => ({ ...d, firstName: e.target.value }))} />
-            <TextField label="Apellido" value={createDialog.lastName} onChange={e => setCreateDialog(d => ({ ...d, lastName: e.target.value }))} />
-            <TextField label="Email" type="email" value={createDialog.email} onChange={e => setCreateDialog(d => ({ ...d, email: e.target.value }))} />
-            <TextField label="Contraseña" type="password" value={createDialog.password} onChange={e => setCreateDialog(d => ({ ...d, password: e.target.value }))} />
-            <TextField
-              select
-              label="Rol"
-              value={createDialog.role}
-              onChange={e => setCreateDialog(d => ({ ...d, role: e.target.value as Exclude<UiRole,'admin'> }))}
-            >
-              <MenuItem value="customer">Cliente</MenuItem>
-              <MenuItem value="contractor">Contratista</MenuItem>
-            </TextField>
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCreateDialog({ open: false, firstName: '', lastName: '', email: '', password: '', role: 'customer' })}>
-            Cancelar
-          </Button>
-          <Button
-            onClick={onCreate}
-            variant="contained"
-            disabled={!createDialog.email || !createDialog.password || !createDialog.firstName || !createDialog.lastName}
-          >
-            Crear
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <AdminCreateUserDialog
+        open={openCreate}
+        onClose={() => setOpenCreate(false)}
+        onCreated={() => { setOpenCreate(false); handleCreated() }}
+      />
 
       <Snackbar open={snack.open} autoHideDuration={3000} onClose={() => setSnack(s => ({ ...s, open: false }))}>
         <Alert severity={snack.type} onClose={() => setSnack(s => ({ ...s, open: false }))}>{snack.msg}</Alert>

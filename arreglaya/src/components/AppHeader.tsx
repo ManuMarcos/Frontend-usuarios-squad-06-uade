@@ -44,8 +44,8 @@ export default function AppHeader() {
   }
 
   const uiRole = toUiRole(user.role)
-  const fullName = user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.name || user.email
-  const avatarInitial = (user.firstName || user.name || user.email || '?')[0]?.toUpperCase() || '?'
+  const fullName = user.meta?.firstName && user.meta?.lastName ? `${user.meta?.firstName} ${user.meta?.lastName}` : user.name || user.email
+  const avatarInitial = (user.meta?.firstName || user.name || user.email || '?')[0]?.toUpperCase() || '?'
 
   const roleItems: Array<{ label: string; to?: string; icon: React.ReactNode; action?: () => void }> = []
   if (uiRole === 'contractor') {

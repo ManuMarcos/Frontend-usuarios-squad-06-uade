@@ -22,7 +22,7 @@ export default function RequestForm(){
     reader.readAsDataURL(f)
   }
   function send(){
-    const r = add({ contractorId: c!.id, subject, image, customerEmail: user?.email || 'anon@homefix' })
+    const r = add({ contractorId: c!.id, subject, image, customerEmail: user?.email || 'anon@ArreglaYa' })
     navigate('/exito', { state: { id: r.id } })
   }
 
