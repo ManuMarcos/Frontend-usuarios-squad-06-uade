@@ -26,7 +26,7 @@ export async function login(email: string, password: string) {
       dni: string
       phoneNumber?: string
       address?: string
-      isActive: boolean
+      active: boolean
       role: Role
     }
     message: string

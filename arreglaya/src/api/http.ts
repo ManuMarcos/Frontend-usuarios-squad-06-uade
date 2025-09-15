@@ -18,7 +18,7 @@ api.interceptors.request.use((config) => {
     p.endsWith('/') ? url.startsWith(p) : url === p
   )
   if (!isPublic) {
-    const token = localStorage.getItem('homefix.jwt')
+    const token = localStorage.getItem('auth.token')
     if (token) {
       config.headers = config.headers || {}
       ;(config.headers as any).Authorization = `Bearer ${token}`
@@ -26,5 +26,35 @@ api.interceptors.request.use((config) => {
   }
   return config
 })
+
+api.interceptors.response.use(
+  (res) => res,
+  (error) => {
+    const status = error?.response?.status
+    if (status === 401 || status === 403) {
+      const rawMsg = error?.response?.data?.message ?? error?.response?.data ?? ''
+      const msg = String(rawMsg).toLowerCase()
+      const inactive = /inactiv|inactive|deshabilitad/.test(msg)
+
+      // limpiar sesión local
+      try {
+        localStorage.removeItem('auth.token')
+        localStorage.removeItem('auth.user')
+      } catch {}
+
+      // evitar loops si ya estás en /login
+      if (typeof window !== 'undefined') {
+        const path = window.location.pathname || ''
+        const alreadyOnLogin = path.startsWith('/login')
+        if (!alreadyOnLogin) {
+          const qp = inactive ? 'm=inactive' : 'm=expired'
+          window.location.replace(`/login?${qp}`)
+        }
+      }
+    }
+    return Promise.reject(error)
+  }
+)
+
 
 export default api
