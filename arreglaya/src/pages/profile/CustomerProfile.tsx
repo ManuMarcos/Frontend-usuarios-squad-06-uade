@@ -182,7 +182,7 @@ export default function CustomerProfile(){
             <Typography><b>DNI:</b> {dni || '—'}</Typography>
             <Typography><b>Teléfono:</b> {phoneNumber || '—'}</Typography>
             <Typography><b>Dirección:</b> {address || '—'}</Typography>
-            <Typography><b>Barrio:</b> {barrio || '—'}</Typography>
+            {/* <Typography><b>Barrio:</b> {barrio || '—'}</Typography> */}
 
             <Stack direction="row" spacing={1} mt={2}>
               <Button variant="outlined" onClick={()=>setEdit(true)}>Editar</Button>
@@ -243,13 +243,13 @@ export default function CustomerProfile(){
               fullWidth
             />
 
-            <FormControl fullWidth>
+            {/* <FormControl fullWidth>
               <InputLabel id="barrio">Barrio</InputLabel>
               <Select labelId="barrio" label="Barrio" value={barrio} onChange={(e)=>setBarrio(e.target.value)}>
                 <MenuItem value=""><em>Ninguno</em></MenuItem>
                 {BARRIOS_CABA.map(b=><MenuItem key={b} value={b}>{b}</MenuItem>)}
               </Select>
-            </FormControl>
+            </FormControl> */}
 
             <Stack direction="row" spacing={2}>
               <Button variant="outlined" onClick={reset} disabled={saving}>Cancelar</Button>

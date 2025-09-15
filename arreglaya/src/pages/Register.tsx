@@ -217,7 +217,7 @@ export default function Register() {
               />
 
               {/* Campos específicos por rol */}
-              {role === "customer" && (
+              {/* {role === "customer" && (
                 <FormControl fullWidth>
                   <InputLabel id="barrio">Barrio</InputLabel>
                   <Select
@@ -245,7 +245,7 @@ export default function Register() {
                     {PROFESSIONS.map((p) => <MenuItem key={p} value={p}>{p}</MenuItem>)}
                   </Select>
                 </FormControl>
-              )}
+              )} */}
 
               <PasswordField
                 label="Contraseña"

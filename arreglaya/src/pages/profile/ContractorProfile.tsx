@@ -185,9 +185,9 @@ export default function ContractorProfile(){
             <Typography><b>DNI:</b> {dni || '—'}</Typography>
             <Typography><b>Teléfono:</b> {phoneNumber || '—'}</Typography>
             <Typography><b>Dirección:</b> {address || '—'}</Typography>
-            <Typography><b>Barrio:</b> {barrio || '—'}</Typography>
+            {/* <Typography><b>Barrio:</b> {barrio || '—'}</Typography>
             <Typography><b>Profesión:</b> {profession || '—'}</Typography>
-            {description && <Typography><b>Descripción:</b> {description}</Typography>}
+            {description && <Typography><b>Descripción:</b> {description}</Typography>} */}
 
             <Stack direction="row" spacing={1} mt={2}>
               <Button variant="outlined" onClick={()=>setEdit(true)}>Editar</Button>
@@ -248,7 +248,7 @@ export default function ContractorProfile(){
               fullWidth
             />
 
-            <Stack direction={{ xs:'column', sm:'row' }} spacing={2}>
+            {/* <Stack direction={{ xs:'column', sm:'row' }} spacing={2}>
               <FormControl fullWidth>
                 <InputLabel id="barrio">Barrio</InputLabel>
                 <Select labelId="barrio" label="Barrio" value={barrio} onChange={(e)=>setBarrio(e.target.value)}>
@@ -263,7 +263,7 @@ export default function ContractorProfile(){
                   {PROFESSIONS.map(p=><MenuItem key={p} value={p}>{p}</MenuItem>)}
                 </Select>
               </FormControl>
-            </Stack>
+            </Stack> */}
 
             <TextField
               label="Descripción (no se envía aún)"
