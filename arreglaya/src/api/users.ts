@@ -2,6 +2,7 @@ import { act } from 'react'
 import api from './http'
 
 export type Role = 'CLIENTE' | 'PRESTADOR' | 'ADMIN'
+export type RoleObj = {id: number, name: string, description?: string,active?: boolean}
 
 export interface UserDTO {
   userId: number
@@ -11,7 +12,8 @@ export interface UserDTO {
   dni: string
   phoneNumber?: string
   address?: string
-  role: Role
+  roleDescription: Role
+  role: RoleObj
   active: boolean
   barrio?:string
 }
@@ -25,7 +27,7 @@ export type ApiUser = {
   phoneNumber?: string
   address?: string
   barrio?: string
-  role?: ApiRole,
+  roleDescription?: ApiRole,
   isActive?: boolean
 }
 

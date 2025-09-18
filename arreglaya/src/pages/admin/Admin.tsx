@@ -16,7 +16,7 @@ import DeactivateUserButton from '../../components/admin/DeactivateUserButton'
 import UserStatusChip from '../../components/admin/UserStatusChip'
 
 type UiRole = 'customer' | 'contractor' | 'admin'
-type UiUser = { userId: number; name: string; email: string; role: UiRole; isActive?: boolean }
+type UiUser = { userId: number; name: string; email: string; role: UiRole; isActive?: boolean, roleName?: string }
 
 // Mapas de rol (API → UI y UI → API)
 const apiToUi: Record<ApiRole, UiRole> = {
@@ -30,11 +30,14 @@ const uiToApi: Record<Exclude<UiRole, 'admin'>, ApiRole> = {
 }
 
 function toUiUser(u: UserDTO): UiUser {
+  console.log('u.role', u)
+  console.log('u.role.name', u.role)
   return {
     userId: u.userId,
     name: `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email.split('@')[0],
     email: u.email,
-    role: apiToUi[u.role],
+    role: apiToUi[u.roleDescription],
+    roleName: u.role?.name,
     isActive: u.active,
   }
 }
@@ -178,13 +181,13 @@ export default function Admin() {
           </TableHead>
           <TableBody>
             {rows.map(u => (
-              <TableRow key={u.userId} hover>
+                <TableRow key={u.userId} hover>
                 <TableCell>{u.userId}</TableCell>
                 <TableCell>{u.name}</TableCell>
                 <TableCell>{u.email}</TableCell>
                 <TableCell>
                   <Box sx={{ display: 'flex', justifyContent: 'left' }}>
-                    <RoleChip role={u.role} />
+                    <RoleChip role={u.roleName ?? 'Desconocido'} />
                   </Box>
                 </TableCell>
                 <TableCell><UserStatusChip isActive={u.isActive} /></TableCell>

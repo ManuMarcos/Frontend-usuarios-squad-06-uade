@@ -36,7 +36,7 @@ export default function ContractorDetail(){
   if (!data) return <Alert severity="warning" sx={{my:2}}>No encontrado</Alert>
 
   // Validamos que sea realmente PROVEEDOR
-  const role = toUiRole(data.role)
+  const role = toUiRole(data.roleDescription)
   const isContractor = role === 'contractor'
 
   // Nombre y extras (intentamos complementar con perfil local si existe)
