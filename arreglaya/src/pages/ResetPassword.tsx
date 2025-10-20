@@ -49,7 +49,6 @@ export default function ResetPassword(){
 
     setLoading(true); setError(null); setSuccess(null)
     try{
-      // 1) Traer todos los usuarios (requiere JWT)
       const users: ApiUser[] = await getAllUsers()
 
       // 2) Buscar por email (case-insensitive)
@@ -140,7 +139,7 @@ export default function ResetPassword(){
 
       <Grid size={{ xs: 12, md: 7 }} display="grid" alignItems="center" justifyContent="center">
         <Stack spacing={1} textAlign="center">
-          <Typography variant="h3" fontWeight={900}>Home<b>Fix</b></Typography>
+          <Typography variant="h3" fontWeight={900}>Arregla<b>Ya</b></Typography>
           <Typography>Ingresá tu email y elegí una nueva contraseña segura.</Typography>
         </Stack>
       </Grid>
