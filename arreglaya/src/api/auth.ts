@@ -1,6 +1,6 @@
+import { AddressInfo } from '../types/address'
+import type { ApiRole } from '../types'
 import api from './http'
-
-export type Role = 'CLIENTE' | 'PRESTADOR' | 'ADMIN'
 
 export interface RegisterDTO {
   email: string
@@ -9,8 +9,10 @@ export interface RegisterDTO {
   lastName: string
   dni: string
   phoneNumber?: string
-  address?: string
-  role: Role
+  addresses: AddressInfo[]
+  role: ApiRole
+  barrio?: string
+  profession?: string
 }
 
 export async function login(email: string, password: string) {
@@ -27,24 +29,13 @@ export async function login(email: string, password: string) {
       phoneNumber?: string
       address?: string
       active: boolean
-      role: Role
+      role: ApiRole
     }
     message: string
   }
 }
 
-export async function registerUser(dto: RegisterDTO) {
-  const { data } = await api.post('/api/users/register', dto)
-  return data as {
-    message: string
-    email: string
-    role: Role
-  }
-}
-
-export async function resetUserPassword(userId: number, newPassword: string) {
-  const { data } = await api.patch(`/api/users/${userId}/reset-password`, {
-    newPassword,
-  })
-  return data as string // "Contraseña cambiada con éxito"
+export async function registerUser(payload: RegisterDTO) {
+  const { data } = await api.post('/api/users/register', payload)
+  return data
 }

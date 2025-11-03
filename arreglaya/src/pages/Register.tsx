@@ -1,284 +1,198 @@
-import React from "react";
+import React from 'react'
 import {
-  Paper, Stack, Typography, Button, Grid, FormControl, InputLabel,
-  Select, MenuItem, Alert, TextField
-} from "@mui/material";
-import { registerUser } from "../api/auth";
-import { useNavigate, Link as RouterLink } from "react-router-dom";
-import { BARRIOS_CABA, PROFESSIONS } from "../constants";
-import PasswordField from "../components/PasswordField";
-import PasswordStrengthBar from "../components/PasswordStrengthBar";
-import { isValidEmail, checkPasswordCriteria } from "../utils/validators";
-import { saveProfile } from "../utils/profile";
+  Paper, Grid, Stack, Typography, TextField, Button, Alert,
+  FormControl, InputLabel, Select, MenuItem
+} from '@mui/material'
+import { useNavigate, Link as RouterLink } from 'react-router-dom'
+import { registerUser, type RegisterDTO } from '../api/auth'
+import { isValidEmail, checkPasswordCriteria } from '../utils/validators'
+import PasswordField from '../components/PasswordField'
+import PasswordStrengthBar from '../components/PasswordStrengthBar'
+import AddressListForm from '../components/AddressListForm'
+import type { AddressInfo } from '../types/address'
+import { EMPTY_ADDR, validateAddress, isEmptyAddress } from '../utils/address'
+import { BARRIOS_CABA, PROFESSIONS } from '../constants'
+import { ApiRole } from '../types'
 
-type UiRole = "customer" | "contractor"
+type UiRole = 'customer' | 'contractor' | 'admin'
+const toApiRole = (r: UiRole) => r === 'customer' ? 'CLIENTE' : r === 'contractor' ? 'PRESTADOR' : 'ADMIN'
 
-export default function Register() {
-  const navigate = useNavigate();
+export default function Register(){
+  const navigate = useNavigate()
 
-  // Campos
-  const [role, setRole] = React.useState<UiRole>("customer");
-  const [firstName, setFirstName] = React.useState("");
-  const [lastName, setLastName]   = React.useState("");
-  const [email, setEmail]         = React.useState("");
-  const [dni, setDni]             = React.useState("");
-  const [phone, setPhone]         = React.useState("");
-  const [address, setAddress]     = React.useState("");
-  const [password, setPassword]   = React.useState("");
-  const [confirm, setConfirm]     = React.useState("");
+  // Datos personales
+  const [firstName, setFirstName] = React.useState('')
+  const [lastName, setLastName]   = React.useState('')
+  const [email, setEmail]         = React.useState('')
+  const [dni, setDni]             = React.useState('')
+  const [phone, setPhone]         = React.useState('')
 
-  // Campos específicos
-  const [barrio, setBarrio]       = React.useState("");
-  const [profession, setProfession] = React.useState("");
+  // Credenciales
+  const [password, setPassword]   = React.useState('')
+  const [confirm, setConfirm]     = React.useState('')
+
+  // Rol + específicos
+  const [role, setRole]           = React.useState<UiRole>('customer')
+  const [barrio, setBarrio]       = React.useState('')
+  const [profession, setProfession] = React.useState('')
+
+  // N domicilios
+ const [addresses, setAddresses] = React.useState<AddressInfo[]>([{ ...EMPTY_ADDR }])
+
 
   // UX
-  const [touched, setTouched] = React.useState({
-    firstName: false, lastName: false, email: false, dni: false,
-    phone: false, address: false, password: false, confirm: false,
-  });
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError]     = React.useState<string | null>(null);
-  const [success, setSuccess] = React.useState(false);
+  const [loading, setLoading] = React.useState(false)
+  const [error, setError]     = React.useState<string | null>(null)
+  const [success, setSuccess] = React.useState<string | null>(null)
+  const [touched, setTouched] = React.useState({ email:false, password:false, confirm:false })
 
   // Validaciones
-  const criteria = checkPasswordCriteria(password);
-  const pwOk    = criteria.length && criteria.upper && criteria.lower && criteria.number && criteria.symbol;
-  const emailOk = isValidEmail(email);
+  const emailOk = isValidEmail(email)
+  const dniOk   = /^\d{7,10}$/.test(dni)
+  const phoneOk = phone.replace(/\D/g,'').length >= 6
 
-  const firstNameErr = !!touched.firstName && firstName.trim().length < 2;
-  const lastNameErr  = !!touched.lastName  && lastName.trim().length  < 2;
-  const emailErr     = !!touched.email     && !emailOk;
-  const dniErr       = !!touched.dni       && !/^\d{7,10}$/.test(dni); // 7 a 10 dígitos
-  const phoneErr     = !!touched.phone     && phone.replace(/\D/g,'').length < 6;
-  const addressErr   = !!touched.address   && address.trim().length < 3;
-  const passErr      = !!touched.password  && !pwOk;
-  const confirmErr   = !!touched.confirm   && password !== confirm;
+  const pwCrit  = checkPasswordCriteria(password)
+  const pwOk    = !!pwCrit.length && pwCrit.upper && pwCrit.lower && pwCrit.number && pwCrit.symbol
+  const confOk  = password === confirm
 
-  const formOk =
-    !firstNameErr && !lastNameErr && !emailErr && !dniErr && !phoneErr &&
-    !addressErr && !passErr && !confirmErr &&
-    firstName && lastName && email && dni && phone && address && password && confirm
+  const addressesOk = (addresses || []).filter(a => Object.keys(validateAddress(a, true)).length === 0).length >= 1
 
-  function mapRoleToApi(r: UiRole) {
-    return (r === "customer" ? "CLIENTE" : "PRESTADOR") as "CLIENTE" | "PRESTADOR";
-  }
-  function parseError(err: any): string {
-    const status = err?.response?.status;
-    const msg = err?.response?.data?.message || err?.message;
-    if (status === 409 || /exist/i.test(msg) || /ya existe/i.test(msg)) return "Ya existe una cuenta con ese correo.";
-    if (status === 400) return "Revisá los datos ingresados.";
-    if (!err?.response) return "No se pudo conectar con el servidor. Probá de nuevo.";
-    return msg || "No se pudo crear la cuenta.";
-  }
 
-  function handleDni(e: React.ChangeEvent<HTMLInputElement>) {
-    setDni(e.target.value.replace(/\D/g,''));
+  const roleOk =
+    (role === 'customer'   && !!barrio) ||
+    (role === 'contractor' && !!profession) ||
+    (role === 'admin')
+
+  const formValid =
+    firstName.trim().length >= 2 &&
+    lastName.trim().length  >= 2 &&
+    emailOk && dniOk && phoneOk &&
+    pwOk && confOk && addressesOk && roleOk
+
+  function parseError(err:any): string {
+    const status = err?.response?.status
+    const msg = err?.response?.data?.message || err?.response?.data || err?.message
+    if (status === 409 && /email/i.test(String(msg))) return 'Ese email ya está registrado.'
+    if (status === 400) return 'Revisá los datos ingresados.'
+    if (!err?.response) return 'No se pudo conectar con el servidor.'
+    return msg || 'Error al registrar.'
   }
 
-  async function handleSubmit(e?: React.FormEvent) {
-    e?.preventDefault();
-    setTouched({
-      firstName: true, lastName: true, email: true, dni: true,
-      phone: true, address: true, password: true, confirm: true,
-    });
-    if (!formOk) { setError("Revisá los campos marcados."); return; }
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setTouched({ email:true, password:true, confirm:true })
+    if (!formValid) { setError('Revisá los campos marcados.'); return }
 
-    setError(null);
-    setLoading(true);
+    setLoading(true); setError(null); setSuccess(null)
     try {
-      const roleApi = mapRoleToApi(role);
-
-      // Enviamos al backend solo los campos que soporta hoy
-      await registerUser({
-        email, password, firstName, lastName,dni,
-        phoneNumber: phone, address, role: roleApi,
-      });
-
-      // Guardamos perfil local (incluye DNI)
-      saveProfile(email, {
-        name: `${firstName} ${lastName}`.trim(),
-        lastName,
+      const payload: RegisterDTO = {
         email,
-        role,
+        password,
+        firstName,
+        lastName,
         dni,
-        phone,
-        address,
-        barrio,
-        profession,
-      });
-
-      setSuccess(true);
-      setTimeout(() => navigate("/login"), 900);
-    } catch (err: any) {
-      setError(parseError(err));
+        phoneNumber: phone,
+        role: toApiRole(role) as ApiRole,
+        addresses: (addresses || []).filter(a => !isEmptyAddress(a)),
+      }
+      await registerUser(payload)
+      setSuccess('¡Cuenta creada! Iniciá sesión para continuar.')
+      setTimeout(() => navigate('/login?m=registered', { replace: true }), 900)
+    } catch (err:any) {
+      setError(parseError(err))
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   }
 
   return (
-    <Grid container justifyContent="center">
-      <Grid size={{ xs: 12, md: 8 }}>
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="body2" sx={{ mb: 1 }}>
-            ¿Ya tenés cuenta? <RouterLink to="/login">Iniciá sesión</RouterLink>
-          </Typography>
+      <Grid size={{ xs: 12, md: 7 }}>
+        <Paper sx={{ p:3 }}>
+          <Typography variant="h5" fontWeight={700} mb={2}>Crear cuenta</Typography>
 
-          <Typography variant="h4" fontWeight={800} mb={2}>Crear cuenta</Typography>
+          {error && <Alert severity="error" sx={{ mb:2 }}>{error}</Alert>}
+          {success && <Alert severity="success" sx={{ mb:2 }}>{success}</Alert>}
 
-          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-          {success && <Alert severity="success" sx={{ mb: 2 }}>¡Listo! Te estamos llevando al inicio de sesión…</Alert>}
+          <Stack component="form" spacing={2} onSubmit={onSubmit}>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField label="Nombre" value={firstName} onChange={(e)=>setFirstName(e.target.value)}
+                  error={firstName.trim().length < 2} helperText={firstName.trim().length < 2 ? 'Ingresá tu nombre.' : ' '} fullWidth />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField label="Apellido" value={lastName} onChange={(e)=>setLastName(e.target.value)}
+                  error={lastName.trim().length < 2} helperText={lastName.trim().length < 2 ? 'Ingresá tu apellido.' : ' '} fullWidth />
+              </Grid>
 
-          <form onSubmit={handleSubmit}>
-            <Stack spacing={2}>
-              <FormControl fullWidth>
-                <InputLabel id="rol">Rol</InputLabel>
-                <Select
-                  labelId="rol"
-                  value={role}
-                  label="Rol"
-                  onChange={(e) => setRole(e.target.value as UiRole)}
-                >
-                  <MenuItem value="customer">Busco contratistas</MenuItem>
-                  <MenuItem value="contractor">Ofrezco servicios</MenuItem>
-                </Select>
-              </FormControl>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField label="Email" type="email" value={email}
+                  onChange={(e)=>setEmail(e.target.value)}
+                  onBlur={()=>setTouched(t=>({...t, email:true}))}
+                  error={touched.email && !emailOk}
+                  helperText={touched.email && !emailOk ? 'Email inválido.' : ' '}
+                  fullWidth />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 3 }}>
+                <TextField label="DNI" inputMode="numeric" value={dni}
+                  onChange={(e)=>setDni(e.target.value.replace(/\D/g,''))}
+                  error={!dniOk} helperText={!dniOk ? '7 a 10 dígitos, solo números.' : ' '}
+                  fullWidth />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 3 }}>
+                <TextField label="Teléfono" value={phone}
+                  onChange={(e)=>setPhone(e.target.value)}
+                  error={!phoneOk} helperText={!phoneOk ? 'Teléfono incompleto.' : ' '}
+                  fullWidth />
+              </Grid>
 
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                <TextField
-                  label="Nombre"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  onBlur={() => setTouched(t => ({ ...t, firstName: true }))}
-                  error={firstNameErr}
-                  helperText={firstNameErr ? "Ingresá tu nombre." : " "}
-                  required
-                  fullWidth
-                />
-                <TextField
-                  label="Apellido"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  onBlur={() => setTouched(t => ({ ...t, lastName: true }))}
-                  error={lastNameErr}
-                  helperText={lastNameErr ? "Ingresá tu apellido." : " "}
-                  required
-                  fullWidth
-                />
-              </Stack>
-
-              <TextField
-                label="Email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onBlur={() => setTouched(t => ({ ...t, email: true }))}
-                error={emailErr}
-                helperText={emailErr ? "Ingresá un email válido." : " "}
-                required
-                fullWidth
-              />
-
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                <TextField
-                  label="DNI"
-                  value={dni}
-                  onChange={handleDni}
-                  onBlur={() => setTouched(t => ({ ...t, dni: true }))}
-                  error={dniErr}
-                  helperText={dniErr ? "Solo números (7 a 10 dígitos)." : " "}
-                  inputMode="numeric"
-                  required
-                  fullWidth
-                />
-                <TextField
-                  label="Teléfono"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  onBlur={() => setTouched(t => ({ ...t, phone: true }))}
-                  error={phoneErr}
-                  helperText={phoneErr ? "Ingresá un teléfono válido." : " "}
-                  placeholder="+54 11 1234-5678"
-                  required
-                  fullWidth
-                />
-              </Stack>
-
-              <TextField
-                label="Dirección"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                onBlur={() => setTouched(t => ({ ...t, address: true }))}
-                error={addressErr}
-                helperText={addressErr ? "Ingresá tu dirección." : " "}
-                placeholder="Calle 1234, Piso/Depto"
-                required
-                fullWidth
-              />
-
-              {/* Campos específicos por rol */}
-              {/* {role === "customer" && (
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <FormControl fullWidth>
-                  <InputLabel id="barrio">Barrio</InputLabel>
-                  <Select
-                    labelId="barrio"
-                    value={barrio}
-                    label="Barrio"
-                    onChange={(e) => setBarrio(e.target.value)}
-                  >
-                    <MenuItem value=""><em>Ninguno</em></MenuItem>
-                    {BARRIOS_CABA.map((b) => <MenuItem key={b} value={b}>{b}</MenuItem>)}
+                  <InputLabel id="role">Rol</InputLabel>
+                  <Select labelId="role" label="Rol" value={role} onChange={(e)=>setRole(e.target.value as UiRole)}>
+                    <MenuItem value="customer">Cliente</MenuItem>
+                    <MenuItem value="contractor">Prestador</MenuItem>
+                    <MenuItem value="admin">Admin</MenuItem>
                   </Select>
                 </FormControl>
-              )}
+              </Grid>
 
-              {role === "contractor" && (
-                <FormControl fullWidth>
-                  <InputLabel id="prof">Profesión</InputLabel>
-                  <Select
-                    labelId="prof"
-                    value={profession}
-                    label="Profesión"
-                    onChange={(e) => setProfession(e.target.value)}
-                  >
-                    <MenuItem value=""><em>Ninguna</em></MenuItem>
-                    {PROFESSIONS.map((p) => <MenuItem key={p} value={p}>{p}</MenuItem>)}
-                  </Select>
-                </FormControl>
-              )} */}
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <PasswordField
+                  label="Contraseña"
+                  value={password}
+                  onChange={(e)=>setPassword(e.target.value)}
+                  onBlur={()=>setTouched(t=>({...t, password:true}))}
+                  error={touched.password && !pwOk}
+                  helperText={touched.password && !pwOk ? 'Usá 8+ caráct., mayús, minús, número y símbolo.' : ' '}
+                />
+                <PasswordStrengthBar password={password} />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <PasswordField
+                  label="Confirmar contraseña"
+                  value={confirm}
+                  onChange={(e)=>setConfirm(e.target.value)}
+                  onBlur={()=>setTouched(t=>({...t, confirm:true}))}
+                  error={touched.confirm && !confOk}
+                  helperText={touched.confirm && !confOk ? 'No coincide.' : ' '}
+                />
+              </Grid>
+            </Grid>
 
-              <PasswordField
-                label="Contraseña"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onBlur={() => setTouched(t => ({ ...t, password: true }))}
-                error={passErr}
-                helperText={passErr ? "Usá 8+ caracteres con mayúscula, minúscula, número y símbolo." : " "}
-                required
-              />
-              <PasswordStrengthBar password={password} />
+            {/* N domicilios */}
+            <Typography variant="h6" mt={1}>Domicilios</Typography>
+            <AddressListForm value={addresses} onChange={setAddresses} />
 
-              <PasswordField
-                label="Confirmar contraseña"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                onBlur={() => setTouched(t => ({ ...t, confirm: true }))}
-                error={confirmErr}
-                helperText={confirmErr ? "Las contraseñas no coinciden." : " "}
-                required
-              />
+            <Button type="submit" disabled={loading || !formValid}>
+              {loading ? 'Creando cuenta…' : 'Crear cuenta'}
+            </Button>
 
-              <Button
-                type="submit"
-                onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }}
-                disabled={loading}
-              >
-                {loading ? "Creando…" : "Crear cuenta"}
-              </Button>
-            </Stack>
-          </form>
+            <Typography variant="body2">
+              ¿Ya tenés cuenta? <RouterLink to="/login">Iniciar sesión</RouterLink>
+            </Typography>
+          </Stack>
         </Paper>
-      </Grid>
+
     </Grid>
-  );
+  )
 }

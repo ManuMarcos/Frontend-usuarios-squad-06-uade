@@ -1,7 +1,7 @@
 import React from 'react'
 import { FormControl, InputLabel, Select, MenuItem } from '@mui/material'
-import type { Role } from '../api/users'
 import type { SxProps, Theme } from '@mui/material/styles'
+import { Role } from '../utils/profile'
 
 export default function RoleSelect({
   value, onChange, size = 'small', label = 'Rol', disabled = false, sx

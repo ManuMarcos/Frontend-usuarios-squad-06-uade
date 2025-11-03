@@ -1,14 +1,13 @@
 import React, { createContext, useContext } from 'react'
 import { login as apiLogin } from '../api/auth'
-
-export type Role = 'customer' | 'contractor' | 'admin'
-type ApiRole = 'CLIENTE' | 'PRESTADOR' | 'PROVEEDOR' | 'ADMIN'
+import type { UiRole, ApiRole } from '../types'
+import { apiRoleToUiRole } from '../types'
 
 export type User = {
   id:  number
   email: string
   name?: string
-  role: Role
+  role: UiRole
   /** Payload completo devuelto por el backend (sin tokens/contraseña). */
   meta?: Record<string, any>
 }
@@ -22,16 +21,6 @@ type AuthContextType = {
 }
 
 const AuthContext = createContext<AuthContextType>({} as any)
-
-function normalizeRole(apiRole?: string): Role {
-  switch ((apiRole || '').toUpperCase()) {
-    case 'CLIENTE': return 'customer'
-    case 'PRESTADOR':
-    case 'PROVEEDOR': return 'contractor'
-    case 'ADMIN': return 'admin'
-    default: return 'customer'
-  }
-}
 
 const TOKEN_KEY = 'auth.token'
 const USER_KEY  = 'auth.user'
@@ -47,7 +36,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = React.useCallback(async (email: string, password: string) => {
     const data = await apiLogin( email, password )
-    console.log('login data', data, data.userInfo?.active)
     const token   = data?.token as string | undefined
     const apiUser = data?.userInfo ?? {}
     const apiRole = apiUser?.role as ApiRole | string | undefined
@@ -62,7 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw err
     }
 
-    const uiRole = normalizeRole(apiRole)
+    const uiRole = apiRoleToUiRole(apiRole)
     const id   = apiUser?.id ?? email
     const name =
       [apiUser?.firstName, apiUser?.lastName].filter(Boolean).join(' ') ||

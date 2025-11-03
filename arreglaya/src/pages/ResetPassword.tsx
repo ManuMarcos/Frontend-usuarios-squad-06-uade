@@ -1,148 +1,168 @@
+// src/pages/ForgotPassword.tsx
 import React from 'react'
 import {
-  Paper, Grid, Stack, Typography, TextField, Button, Alert
+  Box,
+  Stack,
+  Typography,
+  TextField,
+  Button,
+  Alert,
+  Divider,
+  Paper,
+  Grid,
 } from '@mui/material'
-import { useNavigate, Link as RouterLink } from 'react-router-dom'
-import PasswordField from '../components/PasswordField'
-import PasswordStrengthBar from '../components/PasswordStrengthBar'
-import { isValidEmail, checkPasswordCriteria } from '../utils/validators'
-import { getAllUsers, resetUserPassword, type ApiUser } from '../api/users'
+import { Link as RouterLink } from 'react-router-dom'
+import { resetUserPassword } from '../api/users'
 
-export default function ResetPassword(){
-  const navigate = useNavigate()
-
-  // form
-  const [email, setEmail]       = React.useState('')
-  const [password, setPassword] = React.useState('')
-  const [confirm, setConfirm]   = React.useState('')
-
-  // ux
+export default function ForgotPassword() {
+  const [userId, setUserId] = React.useState('')
+  const [newPassword, setNewPassword] = React.useState('')
   const [loading, setLoading] = React.useState(false)
-  const [error, setError]     = React.useState<string | null>(null)
-  const [success, setSuccess] = React.useState<string | null>(null)
-  const [touched, setTouched] = React.useState({ email:false, password:false, confirm:false })
+  const [message, setMessage] = React.useState<string | null>(null)
+  const [error, setError] = React.useState<string | null>(null)
 
-  // validations
-  const criteria = checkPasswordCriteria(password)
-  const pwOk =
-    !!criteria.length && criteria.upper && criteria.lower && criteria.number && criteria.symbol
-  const emailErr = touched.email && !isValidEmail(email)
-  const passErr  = touched.password && !pwOk
-  const confErr  = touched.confirm && password !== confirm
-
-  const formValid = isValidEmail(email) && pwOk && password === confirm
-
-  function parseError(err: any): string {
-    const status = err?.response?.status
-    const msg = err?.response?.data?.message || err?.response?.data || err?.message
-    if (status === 401) return 'Necesitás iniciar sesión para realizar esta acción.'
-    if (status === 403) return 'No tenés permisos para realizar esta acción.'
-    if (!err?.response) return 'No se pudo conectar con el servidor.'
-    if (msg) return String(msg)
-    return 'Ocurrió un error al intentar actualizar la contraseña.'
-  }
-
-  async function onSubmit(e: React.FormEvent){
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setTouched({ email:true, password:true, confirm:true })
-    if (!formValid) { setError('Revisá los campos marcados.'); return }
-
-    setLoading(true); setError(null); setSuccess(null)
-    try{
-      const users: ApiUser[] = await getAllUsers()
-
-      // 2) Buscar por email (case-insensitive)
-      const matches = users.filter(u => (u.email || '').toLowerCase() === email.toLowerCase())
-      if (matches.length === 0) {
-        setError('No encontramos un usuario con ese email.')
-        setLoading(false)
-        return
-      }
-      if (matches.length > 1) {
-        setError('Se encontraron múltiples usuarios con ese email. Contactá a un administrador.')
-        setLoading(false)
-        return
-      }
-
-      const found = matches[0]
-      if (found.isActive === false) {
-        setError('La cuenta está inactiva. No es posible actualizar la contraseña.')
-        setLoading(false)
-        return
-      }
-
-      // 3) Reset con userId + nueva contraseña
-      await resetUserPassword( found.userId, password )
-
-      setSuccess('¡Listo! Actualizamos la contraseña.')
-      setTimeout(() => navigate('/login?m=reset', { replace: true }), 800)
-    }catch(err:any){
-      setError(parseError(err))
-    }finally{
+    setError(null)
+    setMessage(null)
+    if (!userId || !newPassword) { setError('Ingresá ID y contraseña'); return }
+    setLoading(true)
+    try {
+      await resetUserPassword(Number(userId), newPassword)
+      setMessage('¡Contraseña restablecida con éxito!')
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'No pudimos procesar tu solicitud')
+    } finally {
       setLoading(false)
     }
   }
 
   return (
-    <Grid container spacing={2}>
-      <Grid size = {{xs: 12, md: 5}}>
-        <Paper sx={{ p:3 }}>
-          <Typography variant="h5" fontWeight={700} mb={2}>Recuperar contraseña</Typography>
+    <Box
+      sx={{
+        height: '100%',
+        minHeight: '100vh',
+        backgroundColor: '#ffffff',
+        display: 'flex',
+        alignItems: 'center',
+      }}
+    >
+      <Grid
+        container
+        sx={{
+          maxWidth: 980,
+          mx: 'auto',
+          px: 2,
+          py: 6,
+        }}
+        justifyContent="space-between"
+        alignItems="flex-start"
+      >
+        {/* Izquierda: marca y frase (igual que Login) */}
+        <Grid size={{ xs: 12, md: 6 }} sx={{ mb: { xs: 4, md: 0 } }}>
+          <Typography
+            variant="h3"
+            sx={{
+              fontWeight: 800,
+              letterSpacing: -0.5,
+              mb: 1,
+            }}
+          >
+            Arregla
+            <Box component="span" sx={{ color: '#c15d19' }}>
+              Ya
+            </Box>
+          </Typography>
+          <Typography variant="h6" sx={{ fontWeight: 400, color: '#1c1e21', maxWidth: 420 }}>
+            Restablecé tu contraseña para volver a conectarte con quienes necesitan tus servicios.
+          </Typography>
+        </Grid>
 
-          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-          {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+        {/* Derecha: card (mismo look & feel que Login) */}
+        <Grid size={{ xs: 12, md: 'auto' }}>
+          <Paper
+            elevation={3}
+            sx={{
+              width: 360,
+              p: 2.5,
+              borderRadius: 2,
+              backgroundColor: '#fff',
+            }}
+          >
+            {message && (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                {message}
+              </Alert>
+            )}
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
 
-          <Stack component="form" spacing={2} onSubmit={onSubmit}>
-            <TextField
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-              onBlur={() => setTouched(t => ({ ...t, email:true }))}
-              error={!!emailErr}
-              helperText={emailErr ? 'Ingresá un email válido.' : ' '}
+            <Stack component="form" spacing={2} onSubmit={onSubmit}>
+              <TextField
+                size="medium"
+                placeholder="ID de usuario"
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
+                fullWidth
+                required
+              />
+              <TextField
+                size="medium"
+                type="password"
+                placeholder="Nueva contraseña"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                fullWidth
+                required
+              />
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={loading}
+                sx={{
+                  backgroundColor: '#c15d19',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  py: 1,
+                  '&:hover': { backgroundColor: '#a94d14' },
+                }}
+              >
+                {loading ? 'Guardando…' : 'Restablecer'}
+              </Button>
+            </Stack>
+
+            <Box sx={{ textAlign: 'center', mt: 2 }}>
+              <RouterLink to="/login" style={{ color: '#c15d19', fontSize: 14 }}>
+                Volver a iniciar sesión
+              </RouterLink>
+            </Box>
+
+            <Divider sx={{ my: 2 }} />
+
+            <Button
+              component={RouterLink}
+              to="/register"
+              variant="contained"
               fullWidth
-              required
-            />
-
-            <PasswordField
-              label="Nueva contraseña"
-              value={password}
-              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setPassword(e.target.value)}
-              onBlur={() => setTouched(t => ({ ...t, password:true }))}
-              error={!!passErr}
-              helperText={passErr ? 'Usá 8+ caráct., mayús, minús, número y símbolo.' : ' '}
-              required
-            />
-            <PasswordStrengthBar password={password} />
-
-            <PasswordField
-              label="Confirmar contraseña"
-              value={confirm}
-              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setConfirm(e.target.value)}
-              onBlur={() => setTouched(t => ({ ...t, confirm:true }))}
-              error={!!confErr}
-              helperText={confErr ? 'Las contraseñas no coinciden.' : ' '}
-              required
-            />
-
-            <Button type="submit" disabled={loading || !formValid}>
-              {loading ? 'Actualizando…' : 'Actualizar contraseña'}
+              sx={{
+                backgroundColor: '#fff',
+                color: '#c15d19',
+                border: '1px solid rgba(0,0,0,0.08)',
+                fontWeight: 600,
+                textTransform: 'none',
+                '&:hover': {
+                  backgroundColor: '#fff4ee',
+                },
+              }}
+            >
+              Crear cuenta
             </Button>
-
-            <Typography variant="body2">
-              ¿Recordaste tu contraseña? <RouterLink to="/login">Iniciar sesión</RouterLink>
-            </Typography>
-          </Stack>
-        </Paper>
+          </Paper>
+        </Grid>
       </Grid>
-
-      <Grid size={{ xs: 12, md: 7 }} display="grid" alignItems="center" justifyContent="center">
-        <Stack spacing={1} textAlign="center">
-          <Typography variant="h3" fontWeight={900}>Arregla<b>Ya</b></Typography>
-          <Typography>Ingresá tu email y elegí una nueva contraseña segura.</Typography>
-        </Stack>
-      </Grid>
-    </Grid>
+    </Box>
   )
 }
