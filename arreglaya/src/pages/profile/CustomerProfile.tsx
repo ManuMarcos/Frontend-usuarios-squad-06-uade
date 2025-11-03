@@ -7,6 +7,8 @@ import { useAuth } from '../../auth/AuthProvider'
 import { getUserById, updateUserPartial, type ApiUser } from '../../api/users'
 import { BARRIOS_CABA } from '../../constants'
 import { useNavigate } from 'react-router-dom'
+import ProfileImageUploader from '../../components/ProfileImageUploader'
+
 
 type Errors = {
   firstName?: string
@@ -53,6 +55,9 @@ export default function CustomerProfile(){
   const [address, setAddress]     = React.useState('')
   const [barrio, setBarrio]       = React.useState('')
 
+  // 👇 NUEVO: foto de perfil
+  const [profileImageUrl, setProfileImageUrl] = React.useState('')
+
   // snapshot original para "dirty check"
   const original = React.useRef<ApiUser | null>(null)
 
@@ -61,7 +66,8 @@ export default function CustomerProfile(){
     async function load(){
       if (!user?.id) { setLoading(false); return }
       try {
-        const data = await getUserById(user.id)
+        const data = await getUserById(user.id) as ApiUser
+
         if (!alive) return
 
         original.current = data
@@ -73,6 +79,9 @@ export default function CustomerProfile(){
         setPhone(data.phoneNumber ?? '')
         setAddress(data.address ?? '')
         setBarrio(data.barrio ?? '')
+
+        // 👇 NUEVO: precargar foto
+        setProfileImageUrl(data.profileImageUrl ?? '')
 
         // actualizar sesión local
         mergeUserMeta(data)
@@ -100,7 +109,9 @@ export default function CustomerProfile(){
       dni       !== (o.dni       ?? '') ||
       phoneNumber !== (o.phoneNumber ?? '') ||
       address   !== (o.address   ?? '') ||
-      barrio    !== (o.barrio    ?? '')
+      barrio    !== (o.barrio    ?? '') ||
+      //  NUEVO: si cambió la foto, también hay cambios
+      profileImageUrl !== (o.profileImageUrl ?? '')
     )
   }
 
@@ -114,6 +125,8 @@ export default function CustomerProfile(){
     setPhone(o.phoneNumber ?? '')
     setAddress(o.address ?? '')
     setBarrio(o.barrio ?? '')
+    // 👇 NUEVO
+    setProfileImageUrl(o.profileImageUrl ?? '')
     setEdit(false)
   }
 
@@ -134,6 +147,8 @@ export default function CustomerProfile(){
       if (phoneNumber !== (base?.phoneNumber ?? '')) patch.phoneNumber = phoneNumber
       if (address   !== (base?.address   ?? '')) patch.address = address
       if (barrio    !== (base?.barrio    ?? '')) patch.barrio = barrio
+      // 👇 NUEVO
+      if (profileImageUrl !== (base?.profileImageUrl ?? '')) patch.profileImageUrl = profileImageUrl
 
       const msg = await updateUserPartial(user.id, patch)
       // actualizar snapshot + sesión
@@ -166,11 +181,28 @@ export default function CustomerProfile(){
     <Paper sx={{p:3}}>
       <Stack spacing={2}>
         <Stack direction="row" spacing={2} alignItems="center">
-          <Avatar sx={{ width:64, height:64 }}>{(displayName || email)[0]?.toUpperCase() || '?'}</Avatar>
+          {/* 👇 ahora el avatar muestra la foto si hay */}
+          <Avatar
+            src={profileImageUrl || undefined}
+            sx={{ width:64, height:64 }}
+          >
+            {(displayName || email)[0]?.toUpperCase() || '?'}
+          </Avatar>
           <Stack>
             <Typography variant="h5" fontWeight={800}>{displayName}</Typography>
             <Typography variant="body2" color="text.secondary">{email}</Typography>
             <Stack direction="row" spacing={1} mt={1}><Chip label="Cliente" /></Stack>
+
+            {/* 👇 Uploader visible siempre que haya user */}
+            {user?.id && (
+              <ProfileImageUploader
+                userId={user.id}
+                onUploaded={(url) => {
+                  setProfileImageUrl(url)
+                  setToast({open:true, msg:'Foto subida', sev:'success'})
+                }}
+              />
+            )}
           </Stack>
         </Stack>
 

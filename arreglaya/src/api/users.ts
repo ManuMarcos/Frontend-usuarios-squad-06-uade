@@ -19,6 +19,7 @@ export interface UserDTO {
 }
 
 export type ApiUser = {
+  profileImageUrl?: string   // 👈 opcional
   userId: number
   firstName?: string
   lastName?: string
