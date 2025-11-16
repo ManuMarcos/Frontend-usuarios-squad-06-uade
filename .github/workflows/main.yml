@@ -29,11 +29,12 @@ jobs:
     # 4️⃣ Definir URL de backend según rama
     - name: Set API URL
       run: |
-        if [ "${GITHUB_REF_NAME}" == "main" ]; then
-          echo "REACT_APP_API_URL=https://arregla-ya-users.shop/api" >> ./arreglaya/.env.production
-        elif [ "${GITHUB_REF_NAME}" == "develop" ]; then
-          echo "REACT_APP_API_URL=https://arregla-ya-users.shop/dev/api" >> ./arreglaya/.env.production
-        fi
+          if [ "${GITHUB_REF_NAME}" == "main" ]; then
+            # CORRECCIÓN: La URL debe incluir /prod/
+            echo "REACT_APP_API_URL=https://arregla-ya-users.shop/prod/api" >> ./arreglaya/.env.production
+          elif [ "${GITHUB_REF_NAME}" == "develop" ]; then
+            echo "REACT_APP_API_URL=https://arregla-ya-users.shop/dev/api" >> ./arreglaya/.env.production
+          fi
 
     # 5️⃣ Build frontend
     - name: Build frontend
