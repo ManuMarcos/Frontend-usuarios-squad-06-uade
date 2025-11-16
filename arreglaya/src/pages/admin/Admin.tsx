@@ -10,28 +10,24 @@ import ShieldIcon from '@mui/icons-material/AdminPanelSettings'
 
 import RoleChip from '../../components/RoleChip' // usa UiRole (customer|contractor|admin)
 
-import { getUserById, createUser, type UserDTO, type Role as ApiRole, getAllUsers } from '../../api/users'
-import AdminCreateUserDialog from '../../components/admin/AdmingCreateUserDialog'
+import { getUserById, type UserDTO, getAllUsers } from '../../api/users'
+import type { ApiRole, UiRole } from '../../types'
+import { apiRoleToUiRole } from '../../types'
+import AdminCreateUserDialog from '../../components/admin/AdminCreateUserDialog'
 import DeactivateUserButton from '../../components/admin/DeactivateUserButton'
 import UserStatusChip from '../../components/admin/UserStatusChip'
 
-type UiRole = 'customer' | 'contractor' | 'admin'
 type UiUser = { userId: number; name: string; email: string; role: UiRole; isActive?: boolean, roleName?: string }
 
-// Mapas de rol (API → UI y UI → API)
+// Mapa de rol (API → UI)
 const apiToUi: Record<ApiRole, UiRole> = {
   CLIENTE: 'customer',
   PRESTADOR: 'contractor',
   ADMIN: 'admin',
-}
-const uiToApi: Record<Exclude<UiRole, 'admin'>, ApiRole> = {
-  customer: 'CLIENTE',
-  contractor: 'PRESTADOR',
+  PROVEEDOR: 'contractor',
 }
 
 function toUiUser(u: UserDTO): UiUser {
-  console.log('u.role', u)
-  console.log('u.role.name', u.role)
   return {
     userId: u.userId,
     name: `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email.split('@')[0],
@@ -51,11 +47,6 @@ export default function Admin() {
   // búsqueda por ID (el back sólo expone GET /api/users/{id})
   const [searchId, setSearchId] = React.useState<string>('')
 
-  // diálogo de creación (ajustado al contrato del back)
-  const [createDialog, setCreateDialog] =
-    React.useState<{ open: boolean; firstName: string; lastName: string; email: string; password: string; role: Exclude<UiRole, 'admin'>; dni: string; phoneNumber: string; address: string }>({
-      open: false, firstName: '', lastName: '', email: '', password: '', role: 'customer', dni: '', phoneNumber: '', address: ''
-    })
 
   const [snack, setSnack] = React.useState<{ open: boolean; msg: string; type: 'success' | 'error' | 'info' }>({
     open: false, msg: '', type: 'success'
@@ -86,25 +77,7 @@ export default function Admin() {
     }
   }
 
-  async function onCreate() {
-    try {
-      const payload = {
-        email: createDialog.email,
-        password: createDialog.password,
-        firstName: createDialog.firstName,
-        lastName: createDialog.lastName,
-        dni: createDialog.dni,
-        phoneNumber: createDialog.phoneNumber,
-        address: createDialog.address,
-        role: uiToApi[createDialog.role],
-      }
-      await createUser(payload)
-      setSnack({ open: true, msg: 'Usuario creado.', type: 'success' })
-      setCreateDialog({ open: false, firstName: '', lastName: '', email: '', password: '', role: 'customer', dni: '', phoneNumber: '', address: '' })
-    } catch (e: any) {
-      setSnack({ open: true, msg: e?.message || 'No se pudo crear el usuario', type: 'error' })
-    }
-  }
+  // La creación de usuarios ahora se maneja completamente a través del diálogo AdminCreateUserDialog
 
   async function handleCreated() {
     // opción A: recargar la tabla
@@ -118,7 +91,6 @@ export default function Admin() {
       ; (async () => {
         try {
           const users = await getAllUsers()
-          console.log('Usuarios obtenidos:', users)
           if (!alive) return
           setRows(users.map(toUiUser))
         } catch (e: any) {

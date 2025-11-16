@@ -5,10 +5,14 @@ import {
   Alert, Stack
 } from '@mui/material'
 import { BARRIOS_CABA, PROFESSIONS } from '../../constants'
-import { createUser, type ApiRole, type ApiUser } from '../../api/users'
+import { adminCreateUser, type ApiUser } from '../../api/users'
 import PasswordField from '../PasswordField'
 import PasswordStrengthBar from '../PasswordStrengthBar'
 import { isValidEmail, checkPasswordCriteria } from '../../utils/validators'
+import { AddressInfo } from '../../types/address'
+import { EMPTY_ADDR, isEmptyAddress, validateAddress } from '../../utils/address'
+import AddressListForm from '../AddressListForm'
+import { ApiRole } from '../../types'
 
 type Props = {
   open: boolean
@@ -30,6 +34,14 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
   const [role, setRole]             = React.useState<ApiRole>('CLIENTE')
   const [barrio, setBarrio]         = React.useState('')
   const [profession, setProfession] = React.useState('')
+  const [addresses, setAddresses] = React.useState<AddressInfo[]>([{ ...EMPTY_ADDR }])
+
+
+ 
+
+  // validación de addresses: al menos uno válido
+  const validList = addresses.filter(a => Object.keys(validateAddress(a, true)).length === 0)
+  const addressesOk = validList.length >= 1
 
   const [loading, setLoading] = React.useState(false)
   const [error, setError]     = React.useState<string | null>(null)
@@ -40,6 +52,7 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
       setFirstName(''); setLastName(''); setEmail(''); setPassword(''); setConfirm('')
       setDni(''); setPhone(''); setAddress('')
       setRole('CLIENTE'); setBarrio(''); setProfession('')
+      setAddresses([{ ...EMPTY_ADDR }])
       setLoading(false); setError(null)
     }
   }, [open])
@@ -67,7 +80,7 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
     !errors.password && !errors.confirm && !errors.dni &&
     !errors.phone && !errors.address &&
     !(role === 'CLIENTE'   && errors.barrio) &&
-    !(role === 'PRESTADOR' && errors.profession)
+    !(role === 'PRESTADOR' && errors.profession) && addressesOk
 
   async function handleCreate(){
     setError(null)
@@ -75,9 +88,12 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
     setLoading(true)
     try{
       const payload = {
-        email,password,firstName, lastName, dni, phoneNumber, address, role
+        firstName, lastName, email, password, dni, phoneNumber, role,
+        addresses: addresses.filter(a => !isEmptyAddress(a)),
+        ...(role === 'CLIENTE'   ? { barrio } : {}),
+        ...(role === 'PRESTADOR' ? { profession } : {}),
       }
-      const user = await createUser(payload)
+      const user = await adminCreateUser(payload)
       onCreated?.(user)
       onClose()
     }catch(e:any){
@@ -121,11 +137,7 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
               error={!!errors.phone} helperText={errors.phone || ' '} fullWidth />
           </Grid>
 
-          <Grid size = {{ xs: 12 }}>
-            <TextField label="Dirección" value={address}
-              onChange={(e)=>setAddress(e.target.value)}
-              error={!!errors.address} helperText={errors.address || ' '} fullWidth />
-          </Grid>
+          <AddressListForm value={addresses} onChange={setAddresses} />
 
           <Grid size = {{ xs: 12, sm: 6 }}>
             <FormControl fullWidth>
@@ -209,3 +221,4 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
     </Dialog>
   )
 }
+

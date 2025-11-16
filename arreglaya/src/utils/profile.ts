@@ -1,5 +1,8 @@
 // src/utils/profile.ts
-export type Role = 'customer' | 'contractor' | 'admin'
+import type { UiRole } from '../types'
+
+// Re-exportar para compatibilidad con código existente
+export type Role = UiRole
 
 export type BaseProfile = {
   name?: string

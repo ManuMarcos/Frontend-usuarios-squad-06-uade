@@ -31,7 +31,7 @@ export default function Landing(){
   return (
     <Box display="grid" justifyContent="center" alignItems="center" minHeight="60vh">
       <Stack spacing={3} textAlign="center">
-        <Typography variant="h2" fontWeight={900}>Home<b>Fix</b></Typography>
+        <Typography variant="h2" fontWeight={900}>Arregla<b>Ya</b></Typography>
         <Typography>¿Estás buscando contratar a una persona para que te resuelva un problema en tu hogar?</Typography>
         <Typography variant="body2">¡Empezá a buscar!</Typography>
         <Stack direction="row" spacing={2} justifyContent="center">
