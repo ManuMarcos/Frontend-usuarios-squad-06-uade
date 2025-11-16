@@ -68,7 +68,7 @@ export async function updateUserPartial(userId: number | string, body: UpdateUse
   Object.entries(body).forEach(([k, v]) => {
     if (v !== undefined && v !== '') payload[k] = v
   })
-  const { data } = await api.patch(`/users/${userId}`, payload, {
+  const { data } = await api.patch(`api/users/${userId}`, payload, {
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
   })
   return typeof data === 'string' ? data : 'Usuario actualizado con éxito'
@@ -85,7 +85,7 @@ export async function getAllUsers(): Promise<UserDTO[]> {
 // Obtener usuario por ID
 export async function getUserById(userId: number) {
   const token = localStorage.getItem('auth.token')
-  const { data } = await api.get<UserDTO>(`/users/${userId}`, {
+  const { data } = await api.get<UserDTO>(`api/users/${userId}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   })
   return data
@@ -115,7 +115,7 @@ export async function resetUserPassword(userId: number, newPassword: string) {
 
 export async function adminCreateUser(payload: CreateUserPayload) {
   const token = localStorage.getItem('auth.token')
-  const { data } = await api.post('/users/register', payload, {
+  const { data } = await api.post('api/users/register', payload, {
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
