@@ -61,7 +61,6 @@ jobs:
         source: "arreglaya/build/*"
         target: "/var/www/frontend/arreglaya/build"
         rm: false
-        strip_components: 1
 
     # 8️⃣ Recargar Nginx
     - name: Reload Nginx on EC2
