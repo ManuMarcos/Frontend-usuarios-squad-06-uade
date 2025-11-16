@@ -1,36 +1,47 @@
-name: Deploy Frontend to EC2
+name: Deploy React Frontend to EC2
 
 on:
   push:
     branches:
-      - main  # o develop según tu flujo
+      - main      # o develop según tu flujo de trabajo
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
+    # 1️⃣ Descargar el repo
+    - name: Checkout repo
       uses: actions/checkout@v3
 
+    # 2️⃣ Configurar Node.js
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'   # ajusta según tu proyecto
+
+    # 3️⃣ Instalar dependencias
     - name: Install dependencies
-      run: |
-        npm install
+      run: npm ci
+      working-directory: ./arreglaya   # ejecutar desde la carpeta raíz de tu frontend
 
+    # 4️⃣ Build frontend
     - name: Build frontend
-      run: |
-        npm run build   # CREA carpeta 'build/'
+      run: npm run build
+      working-directory: ./arreglaya   # build generará la carpeta ./arreglaya/build
 
+    # 5️⃣ Copiar build a EC2
     - name: Copy build to EC2
       uses: appleboy/scp-action@v0.1.6
       with:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_KEY }}
-        source: "build/*"
+        source: "arreglaya/build/*"
         target: "/var/www/frontend/"
-    
-    - name: Reload Nginx
+
+    # 6️⃣ Reiniciar Nginx para que sirva la nueva versión
+    - name: Reload Nginx on EC2
       uses: appleboy/ssh-action@v0.1.5
       with:
         host: ${{ secrets.EC2_HOST }}
