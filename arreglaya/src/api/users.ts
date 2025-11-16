@@ -85,7 +85,7 @@ export async function getAllUsers(): Promise<UserDTO[]> {
 // Obtener usuario por ID
 export async function getUserById(userId: number) {
   const token = localStorage.getItem('auth.token')
-  const { data } = await api.get<UserDTO>(`/users/${userId}`, {
+  const { data } = await api.get<UserDTO>(`api/users/${userId}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   })
   return data
