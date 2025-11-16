@@ -1,0 +1,39 @@
+name: Deploy Frontend to EC2
+
+on:
+  push:
+    branches:
+      - main  # o develop según tu flujo
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+        npm install
+
+    - name: Build frontend
+      run: |
+        npm run build   # CREA carpeta 'build/'
+
+    - name: Copy build to EC2
+      uses: appleboy/scp-action@v0.1.6
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_KEY }}
+        source: "build/*"
+        target: "/var/www/frontend/"
+    
+    - name: Reload Nginx
+      uses: appleboy/ssh-action@v0.1.5
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_KEY }}
+        script: sudo systemctl reload nginx
