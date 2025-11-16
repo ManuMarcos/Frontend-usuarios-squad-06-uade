@@ -27,7 +27,7 @@ jobs:
 
     # 4️⃣ Build frontend
     - name: Build frontend
-      run: npm run build
+      run: CI=false npm run build
       working-directory: ./arreglaya   # build generará la carpeta ./arreglaya/build
 
     # 5️⃣ Copiar build a EC2
