@@ -27,6 +27,8 @@ jobs:
 
       # 4️⃣ Build frontend
       - name: Build frontend
+        env: 
+            REACT_APP_API_BASE: ${{ secrets.REACT_APP_API_BASE }}
         run: |
           CI=false npm run build
         working-directory: ./arreglaya
