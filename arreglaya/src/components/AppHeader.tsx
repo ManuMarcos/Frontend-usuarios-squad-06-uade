@@ -9,8 +9,6 @@ import { useAuth } from '../auth/AuthProvider'
 import { toUiRole } from '../auth/routeUtils'
 
 import PersonOutline from '@mui/icons-material/PersonOutline'
-import WorkOutline from '@mui/icons-material/WorkOutline'
-import AssignmentTurnedIn from '@mui/icons-material/AssignmentTurnedIn'
 import Dashboard from '@mui/icons-material/Dashboard'
 import LogoutIcon from '@mui/icons-material/Logout'
 import ExpandMore from '@mui/icons-material/ExpandMore'
@@ -48,10 +46,6 @@ export default function AppHeader() {
   const avatarInitial = (user.meta?.firstName || user.name || user.email || '?')[0]?.toUpperCase() || '?'
 
   const roleItems: Array<{ label: string; to?: string; icon: React.ReactNode; action?: () => void }> = []
-  if (uiRole === 'contractor') {
-    roleItems.push({ label: 'Trabajos', to: '/trabajos', icon: <WorkOutline /> })
-    roleItems.push({ label: 'Solicitudes', to: '/solicitudes', icon: <AssignmentTurnedIn /> })
-  }
   if (uiRole === 'admin') roleItems.push({ label: 'Panel Admin', to: '/admin', icon: <Dashboard /> })
 
   return (
