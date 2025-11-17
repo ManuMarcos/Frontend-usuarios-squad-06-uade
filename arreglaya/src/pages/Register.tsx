@@ -86,7 +86,7 @@ export default function Register(){
         dni,
         phoneNumber: phone,
         role: toApiRole(role) as ApiRole,
-        addresses: (addresses || []).filter(a => !isEmptyAddress(a)),
+        address: (addresses || []).filter(a => !isEmptyAddress(a)),
       }
       await registerUser(payload)
       setSuccess('¡Cuenta creada! Iniciá sesión para continuar.')

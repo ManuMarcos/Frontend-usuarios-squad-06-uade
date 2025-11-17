@@ -9,7 +9,7 @@ export interface RegisterDTO {
   lastName: string
   dni: string
   phoneNumber?: string
-  addresses: AddressInfo[]
+  address: AddressInfo[]
   role: ApiRole
   // barrio & profession removed
 }
