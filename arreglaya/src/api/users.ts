@@ -108,8 +108,8 @@ export async function createUser(payload: {
 }
 
 // Resetear contraseña
-export async function resetUserPassword(userId: number, newPassword: string) {
-  const { data } = await api.patch(`/api/users/${userId}/reset-password`, { newPassword })
+export async function resetUserPassword(email: string) {
+  const { data } = await api.post(`/api/users/reset-password`, { email })
   return data
 }
 

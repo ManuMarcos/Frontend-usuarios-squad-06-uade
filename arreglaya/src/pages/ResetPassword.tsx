@@ -15,8 +15,7 @@ import { Link as RouterLink } from 'react-router-dom'
 import { resetUserPassword } from '../api/users'
 
 export default function ForgotPassword() {
-  const [userId, setUserId] = React.useState('')
-  const [newPassword, setNewPassword] = React.useState('')
+  const [email, setEmail] = React.useState('')
   const [loading, setLoading] = React.useState(false)
   const [message, setMessage] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
@@ -25,11 +24,11 @@ export default function ForgotPassword() {
     e.preventDefault()
     setError(null)
     setMessage(null)
-    if (!userId || !newPassword) { setError('Ingresá ID y contraseña'); return }
+    if (!email) { setError('Ingresá email'); return }
     setLoading(true)
     try {
-      await resetUserPassword(Number(userId), newPassword)
-      setMessage('¡Contraseña restablecida con éxito!')
+      await resetUserPassword(email)
+      setMessage('¡Te enviamos un email con el link para restablecer tu contraseña!')
     } catch (err: any) {
       setError(err?.response?.data?.message || 'No pudimos procesar tu solicitud')
     } finally {
@@ -103,18 +102,9 @@ export default function ForgotPassword() {
             <Stack component="form" spacing={2} onSubmit={onSubmit}>
               <TextField
                 size="medium"
-                placeholder="ID de usuario"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                fullWidth
-                required
-              />
-              <TextField
-                size="medium"
-                type="password"
-                placeholder="Nueva contraseña"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 fullWidth
                 required
               />
