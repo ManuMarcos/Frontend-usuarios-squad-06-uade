@@ -9,7 +9,11 @@ import {
   Alert,
   CircularProgress,
   Box,
-  Chip
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material'
 import Grid from '@mui/material/Grid'
 import { alpha } from '@mui/material/styles'
@@ -28,6 +32,7 @@ import { useAuth } from '../../auth/AuthProvider'
 import { getUserById, updateUserPartial, type ApiUser } from '../../api/users'
 import { useNavigate } from 'react-router-dom'
 import AvatarEditor from '../../components/AvatarEditor'
+import ChangePasswordForm from '../../components/ChangePasswordForm'
 
 type InfoItem = { label: string; value: React.ReactNode }
 
@@ -101,6 +106,7 @@ export default function AdminProfile(){
   const [dni, setDni]             = React.useState('')
   const [profileImageUrl, setProfileImageUrl] = React.useState('')
   const [addresses, setAddresses] = React.useState<AddressInfo[]>([])
+  const [changePassOpen, setChangePassOpen] = React.useState(false)
   const cleanAddresses = React.useMemo(
     () => (addresses || []).filter(a => !isEmptyAddress(a)),
     [addresses]
@@ -281,6 +287,11 @@ export default function AdminProfile(){
                 Editar perfil
               </Button>
             )}
+            {!edit && (
+              <Button variant="outlined" onClick={() => setChangePassOpen(true)}>
+                Editar contraseña
+              </Button>
+            )}
             <Button
               color="error"
               variant="outlined"
@@ -438,6 +449,22 @@ export default function AdminProfile(){
       <Snackbar open={toast.open} autoHideDuration={3000} onClose={()=>setToast(s=>({...s, open:false}))}>
         <Alert severity={toast.sev} onClose={()=>setToast(s=>({...s, open:false}))}>{toast.msg}</Alert>
       </Snackbar>
+
+      <Dialog open={changePassOpen} onClose={() => setChangePassOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Cambiar contraseña</DialogTitle>
+        <DialogContent dividers>
+          <ChangePasswordForm
+            defaultEmail={email}
+            onResult={(sev, msg) => {
+              setToast({ open: true, msg, sev })
+              if (sev === 'success') setChangePassOpen(false)
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setChangePassOpen(false)}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
     </Paper>
   )
 }

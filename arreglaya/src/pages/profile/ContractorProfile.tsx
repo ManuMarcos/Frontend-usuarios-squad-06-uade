@@ -11,7 +11,11 @@ import {
   Alert,
   CircularProgress,
   Divider,
-  Box
+  Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material'
 import Grid from '@mui/material/Grid'
 import { alpha } from '@mui/material/styles'
@@ -24,6 +28,7 @@ import { getUserById, updateUserPartial, type ApiUser } from '../../api/users'
 // PROFESSIONS removed
 import AddressListForm from '../../components/AddressListForm'
 import AvatarEditor from '../../components/AvatarEditor'
+import ChangePasswordForm from '../../components/ChangePasswordForm'
 import type { AddressInfo } from '../../types/address'
 import {
   EMPTY_ADDR,
@@ -99,6 +104,7 @@ export default function ContractorProfile() {
 
   // Foto de perfil
   const [profileImageUrl, setProfileImageUrl] = React.useState('')
+  const [changePassOpen, setChangePassOpen] = React.useState(false)
 
   const filteredAddresses = React.useMemo(
     () => (addresses || []).filter(a => !isEmptyAddress(a)),
@@ -344,6 +350,11 @@ export default function ContractorProfile() {
                 Editar perfil
               </Button>
             )}
+            {!edit && (
+              <Button variant="outlined" onClick={() => setChangePassOpen(true)}>
+                Editar contraseña
+              </Button>
+            )}
             <Button
               color="error"
               variant="outlined"
@@ -546,6 +557,22 @@ export default function ContractorProfile() {
           {toast.msg}
         </Alert>
       </Snackbar>
+
+      <Dialog open={changePassOpen} onClose={() => setChangePassOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Cambiar contraseña</DialogTitle>
+        <DialogContent dividers>
+          <ChangePasswordForm
+            defaultEmail={email}
+            onResult={(sev, msg) => {
+              setToast({ open: true, msg, sev })
+              if (sev === 'success') setChangePassOpen(false)
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setChangePassOpen(false)}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
     </Paper>
   )
 }

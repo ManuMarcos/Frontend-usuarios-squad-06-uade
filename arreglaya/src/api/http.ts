@@ -33,6 +33,11 @@ api.interceptors.response.use(
   (res) => res,
   (error) => {
     const status = error?.response?.status
+    const url = error?.config?.url || ''
+    const isChangePassword = url.includes('/api/users/change-password')
+    if (isChangePassword && (status === 401 || status === 403)) {
+      return Promise.reject(error)
+    }
     if (status === 401 || status === 403) {
       const rawMsg = error?.response?.data?.message ?? error?.response?.data ?? ''
       const msg = String(rawMsg).toLowerCase()
