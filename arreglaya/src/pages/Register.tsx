@@ -53,9 +53,6 @@ export default function Register(){
   const pwOk    = !!pwCrit.length && pwCrit.upper && pwCrit.lower && pwCrit.number && pwCrit.symbol
   const confOk  = password === confirm
 
-  const addressesOk = (addresses || []).filter(a => Object.keys(validateAddress(a, true)).length === 0).length >= 1
-
-
   // No requerimos campos extra por rol (barrio/profession fueron removidos)
   const roleOk = true
 
@@ -63,7 +60,7 @@ export default function Register(){
     firstName.trim().length >= 2 &&
     lastName.trim().length  >= 2 &&
     emailOk && dniOk && phoneOk &&
-    pwOk && confOk && addressesOk && roleOk
+    pwOk && confOk && roleOk
 
   function parseError(err:any): string {
     const status = err?.response?.status

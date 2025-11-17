@@ -104,33 +104,51 @@ export default function AddressListForm({ value, onChange, disabled }: Props) {
                 direction={{ xs: 'column', sm: 'row' }}
                 spacing={1}
                 alignItems={{ xs: 'flex-start', sm: 'center' }}
-                sx={{ width: '100%' }}
+                sx={{
+                  width: '100%',
+                  flexWrap: 'wrap',
+                  columnGap: 1.5,
+                  rowGap: 1,
+                  minWidth: 0
+                }}
               >
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography fontWeight={700}>
                     Domicilio {i + 1}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" noWrap>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden'
+                    }}
+                  >
                     {renderSummary(it)}
                   </Typography>
                 </Box>
-                <Chip
-                  label={hasErrors ? 'Incompleto' : 'Completo'}
-                  color={hasErrors ? 'warning' : 'success'}
-                  variant={hasErrors ? 'outlined' : 'filled'}
-                  size="small"
-                />
-                <Tooltip title="Eliminar domicilio">
-                  <span>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => { e.stopPropagation(); removeAt(i) }}
+                <Stack direction="row" spacing={0.5} alignItems="center" sx={{ flexShrink: 0 }}>
+                  <Chip
+                    label={hasErrors ? 'Incompleto' : 'Completo'}
+                    color={hasErrors ? 'warning' : 'success'}
+                    variant={hasErrors ? 'outlined' : 'filled'}
+                    size="small"
+                  />
+                  <Tooltip title="Eliminar domicilio">
+                    <span>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => { e.stopPropagation(); removeAt(i) }}
                       disabled={disabled || list.length <= 1}
+                      sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
                     >
                       <DeleteOutlineIcon fontSize="small" />
                     </IconButton>
                   </span>
                 </Tooltip>
+                </Stack>
               </Stack>
             </AccordionSummary>
             <AccordionDetails>
