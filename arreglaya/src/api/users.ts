@@ -107,9 +107,16 @@ export async function createUser(payload: {
   return data
 }
 
-// Resetear contraseña
-export async function resetUserPassword(userId: number, newPassword: string) {
-  const { data } = await api.patch(`/api/users/${userId}/reset-password`, { newPassword })
+// Recuperar contraseña
+export async function requestPasswordReset(email: string) {
+  const { data } = await api.post('/api/users/forgot-password', { email })
+  return data
+}
+
+export async function resetPasswordWithToken(token: string, newPassword: string) {
+  console.log('resetPasswordWithToken', token, newPassword)
+  const { data } = await api.post('/api/users/reset-password', {token, newPassword }, {
+  })
   return data
 }
 

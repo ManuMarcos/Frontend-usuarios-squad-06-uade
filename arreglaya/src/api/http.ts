@@ -8,6 +8,8 @@ const api = axios.create({
 const PUBLIC_PATHS = [
   '/api/users/login',
   '/api/users/register',
+  '/api/users/forgot-password',
+  '/api/users/reset-password',
   // si usás reset por userId o por token, agregalos acá:
   '/api/users/',             // para /api/users/{id}/reset-password (match por startsWith)
 ]

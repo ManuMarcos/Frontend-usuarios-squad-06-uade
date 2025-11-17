@@ -30,7 +30,9 @@ const router = createBrowserRouter([
       { index: true, element: <GuestRoute><Login /></GuestRoute> },
       { path: 'login', element: <GuestRoute><Login /></GuestRoute> },
       { path: 'register', element: <GuestRoute><Register /></GuestRoute> },
-      { path: 'recuperar', element: <GuestRoute><ResetPassword /></GuestRoute> },
+      { path: 'recuperar', element: <GuestRoute><ForgotPassword /></GuestRoute> },
+      { path: 'reset-password', element: <GuestRoute><ResetPassword /></GuestRoute> },
+      { path: 'reset-password/:token', element: <GuestRoute><ResetPassword /></GuestRoute> },
       { path: 'restablecer/:token', element: <GuestRoute><ResetPassword /></GuestRoute> },
 
       { path: 'terminos', element: <Terms /> },

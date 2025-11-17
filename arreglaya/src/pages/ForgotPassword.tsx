@@ -10,41 +10,34 @@ import {
   Divider,
   Paper,
   Grid,
-  IconButton,
-  InputAdornment,
 } from '@mui/material'
-import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded'
-import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded'
 import { Link as RouterLink } from 'react-router-dom'
-import { resetUserPassword } from '../api/users'
+import { requestPasswordReset } from '../api/users'
+import { isValidEmail } from '../utils/validators'
 
 export default function ForgotPassword() {
-  const [userId, setUserId] = React.useState('')
-  const [newPassword, setNewPassword] = React.useState('')
-  const [showPass, setShowPass] = React.useState(false)
-
+  const [email, setEmail] = React.useState('')
   const [loading, setLoading] = React.useState(false)
   const [message, setMessage] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
 
-  // UX: validaciones mínimas SOLO visuales (no cambian la lógica)
-  const idError = userId.trim().length === 0
-  const passError = newPassword.trim().length === 0
-  const canSubmit = !idError && !passError && !loading
+  const emailTouched = email.length > 0
+  const emailInvalid = emailTouched && !isValidEmail(email)
+  const canSubmit = isValidEmail(email) && !loading
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null); setMessage(null)
 
-    if (idError || passError) {
-      setError('Ingresá ID y contraseña')
+    if (!isValidEmail(email)) {
+      setError('Ingresá un email válido')
       return
     }
 
     setLoading(true)
     try {
-      await resetUserPassword(Number(userId), newPassword)
-      setMessage('¡Contraseña restablecida con éxito!')
+      await requestPasswordReset(email)
+      setMessage('Si el email está registrado, te enviamos un enlace para restablecer tu contraseña.')
     } catch (err: any) {
       setError(err?.response?.data?.message || 'No pudimos procesar tu solicitud')
     } finally {
@@ -97,47 +90,23 @@ export default function ForgotPassword() {
 
             {/* Título sutil para jerarquía visual */}
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
-              Restablecer contraseña
+              Recuperar acceso
             </Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-              Ingresá tu ID de usuario y una nueva contraseña.
+              Ingresá tu email y te enviaremos instrucciones para restablecer tu contraseña.
             </Typography>
 
             <Stack component="form" spacing={2} onSubmit={onSubmit}>
               <TextField
                 size="medium"
-                placeholder="ID de usuario"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                error={idError && !!userId} // marca si tocaron y dejaron vacío
-                helperText={idError && !!userId ? 'Campo obligatorio' : ' '}
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                error={emailInvalid}
+                helperText={emailInvalid ? 'Ingresá un email válido' : ' '}
                 fullWidth
                 required
-              />
-
-              <TextField
-                size="medium"
-                type={showPass ? 'text' : 'password'}
-                placeholder="Nueva contraseña"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                error={passError && !!newPassword}
-                helperText={passError && !!newPassword ? 'Campo obligatorio' : ' '}
-                fullWidth
-                required
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        aria-label={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                        onClick={() => setShowPass(s => !s)}
-                        edge="end"
-                      >
-                        {showPass ? <VisibilityOffRoundedIcon /> : <VisibilityRoundedIcon />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
               />
 
               <Button
@@ -152,7 +121,7 @@ export default function ForgotPassword() {
                   '&:hover': { backgroundColor: '#a94d14' },
                 }}
               >
-                {loading ? 'Guardando…' : 'Restablecer'}
+                {loading ? 'Enviando…' : 'Enviar instrucciones'}
               </Button>
             </Stack>
 

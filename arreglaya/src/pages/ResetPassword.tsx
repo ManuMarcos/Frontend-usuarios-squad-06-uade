@@ -1,4 +1,3 @@
-// src/pages/ForgotPassword.tsx
 import React from 'react'
 import {
   Box,
@@ -11,27 +10,51 @@ import {
   Paper,
   Grid,
 } from '@mui/material'
-import { Link as RouterLink } from 'react-router-dom'
-import { resetUserPassword } from '../api/users'
+import { Link as RouterLink, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { resetPasswordWithToken } from '../api/users'
 
-export default function ForgotPassword() {
-  const [userId, setUserId] = React.useState('')
+export default function ResetPassword() {
+  const { token: tokenParam } = useParams<{ token?: string }>()
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const token = tokenParam || searchParams.get('token') || ''
+
   const [newPassword, setNewPassword] = React.useState('')
+  const [confirmPassword, setConfirmPassword] = React.useState('')
   const [loading, setLoading] = React.useState(false)
   const [message, setMessage] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
+
+  const passTooShort = newPassword.length > 0 && newPassword.length < 6
+  const mismatch = confirmPassword.length > 0 && confirmPassword !== newPassword
+  const tokenMissing = !token
+  const canSubmit = Boolean(token && newPassword && confirmPassword && !passTooShort && !mismatch && !loading)
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setMessage(null)
-    if (!userId || !newPassword) { setError('Ingresá ID y contraseña'); return }
+
+    if (tokenMissing) {
+      setError('El enlace es inválido o expiró.')
+      return
+    }
+    if (passTooShort) {
+      setError('La contraseña debe tener al menos 6 caracteres.')
+      return
+    }
+    if (mismatch) {
+      setError('Las contraseñas no coinciden.')
+      return
+    }
+
     setLoading(true)
     try {
-      await resetUserPassword(Number(userId), newPassword)
-      setMessage('¡Contraseña restablecida con éxito!')
+      await resetPasswordWithToken(token, newPassword)
+      setMessage('¡Tu contraseña fue actualizada! Ahora te redirigiremos para iniciar sesión.')
+      setTimeout(() => navigate('/login?m=reset'), 1000)
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'No pudimos procesar tu solicitud')
+      setError(err?.response?.data?.message || 'No pudimos restablecer tu contraseña. Intentalo nuevamente.')
     } finally {
       setLoading(false)
     }
@@ -58,7 +81,6 @@ export default function ForgotPassword() {
         justifyContent="space-between"
         alignItems="flex-start"
       >
-        {/* Izquierda: marca y frase (igual que Login) */}
         <Grid size={{ xs: 12, md: 6 }} sx={{ mb: { xs: 4, md: 0 } }}>
           <Typography
             variant="h3"
@@ -74,11 +96,10 @@ export default function ForgotPassword() {
             </Box>
           </Typography>
           <Typography variant="h6" sx={{ fontWeight: 400, color: '#1c1e21', maxWidth: 420 }}>
-            Restablecé tu contraseña para volver a conectarte con quienes necesitan tus servicios.
+            Creá una nueva contraseña segura para proteger tu cuenta.
           </Typography>
         </Grid>
 
-        {/* Derecha: card (mismo look & feel que Login) */}
         <Grid size={{ xs: 12, md: 'auto' }}>
           <Paper
             elevation={3}
@@ -100,28 +121,48 @@ export default function ForgotPassword() {
               </Alert>
             )}
 
+            {tokenMissing && (
+              <Alert severity="warning" sx={{ mb: 2 }}>
+                El enlace para restablecer la contraseña no es válido. Solicitá uno nuevo.
+              </Alert>
+            )}
+
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
+              Definir nueva contraseña
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
+              Elegí una contraseña de al menos 6 caracteres.
+            </Typography>
+
             <Stack component="form" spacing={2} onSubmit={onSubmit}>
-              <TextField
-                size="medium"
-                placeholder="ID de usuario"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                fullWidth
-                required
-              />
               <TextField
                 size="medium"
                 type="password"
                 placeholder="Nueva contraseña"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
+                error={passTooShort}
+                helperText={passTooShort ? 'Debe tener al menos 6 caracteres' : ' '}
                 fullWidth
                 required
               />
+
+              <TextField
+                size="medium"
+                type="password"
+                placeholder="Confirmar contraseña"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                error={mismatch}
+                helperText={mismatch ? 'Las contraseñas no coinciden' : ' '}
+                fullWidth
+                required
+              />
+
               <Button
                 type="submit"
                 variant="contained"
-                disabled={loading}
+                disabled={!canSubmit}
                 sx={{
                   backgroundColor: '#c15d19',
                   textTransform: 'none',
@@ -130,7 +171,7 @@ export default function ForgotPassword() {
                   '&:hover': { backgroundColor: '#a94d14' },
                 }}
               >
-                {loading ? 'Guardando…' : 'Restablecer'}
+                {loading ? 'Guardando…' : 'Actualizar contraseña'}
               </Button>
             </Stack>
 
