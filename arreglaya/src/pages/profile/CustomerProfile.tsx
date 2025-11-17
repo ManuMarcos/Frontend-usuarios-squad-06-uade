@@ -97,7 +97,7 @@ export default function CustomerProfile() {
   // barrio removed
 
   // N domicilios
-  const [addresses, setAddresses] = React.useState<AddressInfo[]>([{ ...EMPTY_ADDR }])
+  const [addresses, setAddresses] = React.useState<AddressInfo[]>([])
 
   // Foto de perfil
   const [profileImageUrl, setProfileImageUrl] = React.useState('')
@@ -138,7 +138,7 @@ export default function CustomerProfile() {
         setPhone(data.phoneNumber ?? '')
   // barrio removed
         setAddresses(
-          normalizedAddrs.length ? normalizedAddrs.map(addr => ({ ...addr })) : [{ ...EMPTY_ADDR }]
+          normalizedAddrs.length ? normalizedAddrs.map(addr => ({ ...addr })) : []
         )
 
         setProfileImageUrl((data as any).profileImageUrl ?? '')
@@ -172,17 +172,12 @@ export default function CustomerProfile() {
   const dniOk = /^\d{7,10}$/.test(dni)
   const phoneOk = phoneNumber.replace(/\D/g, '').length >= 6
 
-  // Al menos un domicilio válido
-  const addressesOk = (addresses || [])
-    .filter(a => Object.keys(validateAddress(a, true)).length === 0).length >= 1
-
   const isValid =
     firstName.trim().length >= 2 &&
     lastName.trim().length >= 2 &&
     emailOk &&
     dniOk &&
-    phoneOk &&
-    addressesOk
+    phoneOk
 
   function isDirty(): boolean {
     const o = original.current
@@ -221,7 +216,7 @@ export default function CustomerProfile() {
       ? srcAddrs.map(addr => ({ ...addr }))
       : []
     setAddresses(
-      normalizedAddrs.length ? normalizedAddrs.map(addr => ({ ...addr })) : [{ ...EMPTY_ADDR }]
+      normalizedAddrs.length ? normalizedAddrs.map(addr => ({ ...addr })) : []
     )
     setProfileImageUrl((o as any).profileImageUrl ?? '')
     setEdit(false)
@@ -250,7 +245,7 @@ export default function CustomerProfile() {
       if (profileImageUrl !== ((base as any).profileImageUrl ?? '')) patch.profileImageUrl = profileImageUrl
 
       const addrPatch = buildAddressesPatch(base.addresses, addresses)
-      if (addrPatch !== undefined) patch.addresses = addrPatch
+      if (addrPatch !== undefined) patch.address = addrPatch
 
       const msg = await updateUserPartial(user.id, patch)
 

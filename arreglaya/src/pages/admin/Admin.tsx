@@ -42,6 +42,7 @@ function toUiUser(u: UserDTO): UiUser {
 
 export default function Admin() {
   const [rows, setRows] = React.useState<UiUser[]>([])
+  const [sortAsc, setSortAsc] = React.useState(true)
   const [loading, setLoading] = React.useState(false)
   const [openCreate, setOpenCreate] = React.useState(false)
 
@@ -67,9 +68,9 @@ export default function Admin() {
       setRows(prev => {
         const idx = prev.findIndex(x => x.userId === ui.userId)
         if (idx >= 0) {
-          const next = [...prev]; next[idx] = ui; return next
+          const next = [...prev]; next[idx] = ui; return sortRows(next)
         }
-        return [ui, ...prev]
+        return sortRows([ui, ...prev])
       })
       setSnack({ open: true, msg: `Usuario ${ui.email} cargado.`, type: 'success' })
     } catch (e: any) {
@@ -82,10 +83,8 @@ export default function Admin() {
   // La creación de usuarios ahora se maneja completamente a través del diálogo AdminCreateUserDialog
 
   async function handleCreated() {
-    // opción A: recargar la tabla
     const users = await getAllUsers()
-
-    setRows(users.map(toUiUser))
+    setRows(sortRows(users.map(toUiUser)))
   }
   // ...
   React.useEffect(() => {
@@ -94,7 +93,7 @@ export default function Admin() {
         try {
           const users = await getAllUsers()
           if (!alive) return
-          setRows(users.map(toUiUser))
+          setRows(sortRows(users.map(toUiUser)))
         } catch (e: any) {
           setSnack({ open: true, msg: e?.response?.data || e?.message || 'No se pudo obtener usuarios', type: 'error' })
         }
@@ -102,6 +101,15 @@ export default function Admin() {
     return () => { alive = false }
   }, [])
 
+
+  function sortRows(list: UiUser[]) {
+    return [...list].sort((a, b) => sortAsc ? a.userId - b.userId : b.userId - a.userId)
+  }
+
+  function toggleSort() {
+    setSortAsc(prev => !prev)
+    setRows(prev => [...prev].sort((a, b) => (!sortAsc ? a.userId - b.userId : b.userId - a.userId)))
+  }
 
   return (
     <Paper sx={{ p: 3 }}>
@@ -144,7 +152,9 @@ export default function Admin() {
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>ID</TableCell>
+              <TableCell onClick={toggleSort} sx={{ cursor: 'pointer', userSelect: 'none' }}>
+                ID {sortAsc ? '▲' : '▼'}
+              </TableCell>
               <TableCell>Nombre</TableCell>
               <TableCell>Email</TableCell>
               <TableCell sx={{ width: 140 }}>Rol</TableCell>

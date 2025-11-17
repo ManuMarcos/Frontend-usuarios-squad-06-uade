@@ -95,7 +95,7 @@ export default function ContractorProfile() {
   const [phoneNumber, setPhone]   = React.useState('')
 
   // N domicilios
-  const [addresses, setAddresses] = React.useState<AddressInfo[]>([{ ...EMPTY_ADDR }])
+  const [addresses, setAddresses] = React.useState<AddressInfo[]>([])
 
   // Foto de perfil
   const [profileImageUrl, setProfileImageUrl] = React.useState('')
@@ -119,18 +119,19 @@ export default function ContractorProfile() {
         const data = await getUserById(user.id) as ApiUser
         if (!alive) return
 
-        original.current = data
-        setFirstName(data.firstName ?? '')
-        setLastName(data.lastName ?? '')
-        setEmail(data.email ?? user.email)
-        setDni(data.dni ?? '')
-        setPhone(data.phoneNumber ?? '')
         const srcAddrs: AddressInfo[] | undefined = Array.isArray((data as any).addresses)
           ? (data as any).addresses
           : Array.isArray((data as any).address)
           ? (data as any).address
           : undefined
-        setAddresses(srcAddrs && srcAddrs.length ? srcAddrs : [{ ...EMPTY_ADDR }])
+        const normalizedAddrs = srcAddrs && srcAddrs.length ? srcAddrs.map(addr => ({ ...addr })) : []
+        original.current = { ...data, addresses: normalizedAddrs }
+        setFirstName(data.firstName ?? '')
+        setLastName(data.lastName ?? '')
+        setEmail(data.email ?? user.email)
+        setDni(data.dni ?? '')
+        setPhone(data.phoneNumber ?? '')
+        setAddresses(normalizedAddrs)
 
         setProfileImageUrl((data as any).profileImageUrl ?? '')
 
@@ -154,13 +155,10 @@ export default function ContractorProfile() {
   const emailOk = isValidEmail(email)
   const dniOk   = /^\d{7,10}$/.test(dni)
   const phoneOk = phoneNumber.replace(/\D/g, '').length >= 6
-  const addressesOk = (addresses || [])
-    .filter(a => Object.keys(validateAddress(a, true)).length === 0).length >= 1
   const isValid =
     firstName.trim().length >= 2 &&
     lastName.trim().length  >= 2 &&
-    emailOk && dniOk && phoneOk &&
-    addressesOk
+    emailOk && dniOk && phoneOk
 
   function isDirty(): boolean {
     const o = original.current
@@ -188,7 +186,13 @@ export default function ContractorProfile() {
     setEmail(o.email ?? user?.email ?? '')
     setDni(o.dni ?? '')
     setPhone(o.phoneNumber ?? '')
-    setAddresses(o.addresses?.length ? o.addresses : [{ ...EMPTY_ADDR }])
+    const srcAddrs: AddressInfo[] | undefined = Array.isArray((o as any).addresses)
+      ? (o as any).addresses
+      : Array.isArray((o as any).address)
+      ? (o as any).address
+      : undefined
+    const normalizedAddrs = srcAddrs && srcAddrs.length ? srcAddrs.map(addr => ({ ...addr })) : []
+    setAddresses(normalizedAddrs)
     setProfileImageUrl((o as any).profileImageUrl ?? '')
     setEdit(false)
   }
@@ -214,8 +218,8 @@ export default function ContractorProfile() {
       if (phoneNumber  !== (base.phoneNumber ?? '')) patch.phoneNumber = phoneNumber
       if (profileImageUrl !== ((base as any).profileImageUrl ?? '')) patch.profileImageUrl = profileImageUrl
 
-      const addrPatch = buildAddressesPatch(base.addresses, addresses)
-      if (addrPatch !== undefined) patch.addresses = addrPatch
+      const addrPatch = buildAddressesPatch(base?.addresses, addresses)
+      if (addrPatch !== undefined) patch.address = addrPatch
 
       const msg = await updateUserPartial(user.id, patch)
 

@@ -29,7 +29,7 @@ type Props = {
 }
 
 export default function AddressListForm({ value, onChange, disabled }: Props) {
-  const list = value.length ? value : [{ ...EMPTY_ADDR }]
+  const list = value.length ? value : []
   const [expandedIndex, setExpandedIndex] = React.useState<number>(0)
 
   React.useEffect(() => {
@@ -45,8 +45,7 @@ export default function AddressListForm({ value, onChange, disabled }: Props) {
 
   function removeAt(i: number) {
     const next = list.filter((_, idx) => idx !== i)
-    const resolved = next.length ? next : [{ ...EMPTY_ADDR }]
-    onChange(resolved)
+    onChange(next)
     setExpandedIndex(prev => {
       if (prev === i) return Math.max(0, i - 1)
       if (prev > i) return prev - 1
@@ -70,18 +69,24 @@ export default function AddressListForm({ value, onChange, disabled }: Props) {
 
   return (
     <Stack spacing={2}>
-      <Stack direction="row" spacing={1} flexWrap="wrap">
-        {list.map((_, idx) => (
-          <Chip
-            key={`addr-pill-${idx}`}
-            label={`Domicilio ${idx + 1}`}
-            color={expandedIndex === idx ? 'primary' : 'default'}
-            variant={expandedIndex === idx ? 'filled' : 'outlined'}
-            size="small"
-            onClick={() => setExpandedIndex(idx)}
-          />
-        ))}
-      </Stack>
+      {list.length > 0 ? (
+        <Stack direction="row" spacing={1} flexWrap="wrap">
+          {list.map((_, idx) => (
+            <Chip
+              key={`addr-pill-${idx}`}
+              label={`Domicilio ${idx + 1}`}
+              color={expandedIndex === idx ? 'primary' : 'default'}
+              variant={expandedIndex === idx ? 'filled' : 'outlined'}
+              size="small"
+              onClick={() => setExpandedIndex(idx)}
+            />
+          ))}
+        </Stack>
+      ) : (
+        <Typography variant="body2" color="text.secondary">
+          Sin domicilios cargados. Usá “Agregar domicilio” para sumar uno nuevo.
+        </Typography>
+      )}
 
       {list.map((it, i) => {
         const hasErrors = Object.keys(errors[i] || {}).length > 0
@@ -141,13 +146,13 @@ export default function AddressListForm({ value, onChange, disabled }: Props) {
                       <IconButton
                         size="small"
                         onClick={(e) => { e.stopPropagation(); removeAt(i) }}
-                      disabled={disabled || list.length <= 1}
-                      sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
-                    >
-                      <DeleteOutlineIcon fontSize="small" />
-                    </IconButton>
-                  </span>
-                </Tooltip>
+                        disabled={disabled}
+                        sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
+                      >
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
                 </Stack>
               </Stack>
             </AccordionSummary>

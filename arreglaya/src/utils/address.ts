@@ -52,9 +52,21 @@ export function addressesEqual(a?: AddressInfo[], b?: AddressInfo[]): boolean {
   return JSON.stringify(norm(a)) === JSON.stringify(norm(b))
 }
 
-/** Devuelve `undefined` si no hay cambios; si cambió, retorna el array filtrado de vacíos. */
-export function buildAddressesPatch(oldArr?: AddressInfo[], newArr?: AddressInfo[]): AddressInfo[] | undefined {
+/**
+ * Devuelve `undefined` si no hay cambios.
+ * Si se eliminaron todos los domicilios, retorna un array vacío para limpiar en backend.
+ */
+export function buildAddressesPatch(
+  oldArr?: AddressInfo[],
+  newArr?: AddressInfo[]
+): AddressInfo[] | undefined {
   const filtered = (newArr || []).filter(a => !isEmptyAddress(a))
-  if (addressesEqual(oldArr || [], filtered)) return undefined
+  const prevFiltered = (oldArr || []).filter(a => !isEmptyAddress(a))
+
+  if (!filtered.length) {
+    return prevFiltered.length ? [] : undefined
+  }
+
+  if (addressesEqual(prevFiltered, filtered)) return undefined
   return filtered
 }

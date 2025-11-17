@@ -53,7 +53,7 @@ export type UpdateUserRequest = Partial<{
   phoneNumber: string
   role: ApiRole
   isActive: boolean
-  addresses: AddressInfo[]      // ← enviar array completo si cambió
+  address: AddressInfo[]      // ← enviar array completo si cambió (array vacío para limpiar)
 }>
 
 
