@@ -14,7 +14,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Instalar Node.js
+      # 2️⃣ Configurar Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -25,24 +25,32 @@ jobs:
         run: npm ci
         working-directory: ./arreglaya
 
-      # 4️⃣ Build del frontend
+      # 4️⃣ Build frontend
       - name: Build frontend
         run: |
           CI=false npm run build
         working-directory: ./arreglaya
 
-      # 5️⃣ Copiar build a la EC2 usando rsync
-      - name: Deploy to EC2
-        uses: burnett01/rsync-deployments@v3
+      # 5️⃣ Limpiar carpeta remota anterior
+      - name: Clean remote folder
+        uses: appleboy/ssh-action@v0.1.5
         with:
-          switches: -avz --delete
-          path: ./arreglaya/build/
-          remote_path: /var/www/frontend/arreglaya/
-          remote_host: ${{ secrets.EC2_HOST }}
-          remote_user: ${{ secrets.EC2_USER }}
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
+          script: rm -rf /var/www/frontend/arreglaya/*
 
-      # 6️⃣ Recargar NGINX en la EC2
+      # 6️⃣ Copiar build a EC2
+      - name: Copy build to EC2
+        uses: appleboy/scp-action@v0.1.6
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          source: "arreglaya/build/*"
+          target: "/var/www/frontend/arreglaya/"
+
+      # 7️⃣ Recargar NGINX
       - name: Reload NGINX
         uses: appleboy/ssh-action@v0.1.5
         with:
