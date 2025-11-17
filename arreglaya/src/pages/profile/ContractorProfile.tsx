@@ -486,6 +486,7 @@ export default function ContractorProfile() {
                     onChange={e => setDni(e.target.value.replace(/\D/g, ''))}
                     error={!dniOk}
                     helperText={!dniOk ? '7 a 10 dígitos, solo números.' : ' '}
+                    disabled
                     fullWidth
                   />
                 </Grid>

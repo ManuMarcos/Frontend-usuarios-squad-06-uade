@@ -387,6 +387,16 @@ export default function AdminProfile(){
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
                   <TextField
+                    label="DNI"
+                    value={dni}
+                    onChange={(e)=>setDni(e.target.value.replace(/\\D/g,''))}
+                    error={!!errors.dni} helperText={errors.dni || ' '}
+                    disabled
+                    fullWidth
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
                     label="Teléfono"
                     value={phoneNumber}
                     onChange={(e)=>setPhone(e.target.value)}
@@ -394,15 +404,7 @@ export default function AdminProfile(){
                     fullWidth
                   />
                 </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField
-                    label="DNI"
-                    value={dni}
-                    onChange={(e)=>setDni(e.target.value.replace(/\\D/g,''))}
-                    error={!!errors.dni} helperText={errors.dni || ' '}
-                    fullWidth
-                  />
-                </Grid>
+                
               </Grid>
             </Box>
 
