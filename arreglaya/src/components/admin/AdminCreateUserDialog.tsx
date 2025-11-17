@@ -2,7 +2,7 @@ import React from 'react'
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Grid, TextField, Button, FormControl, InputLabel, Select, MenuItem,
-  Alert, Stack
+  Alert, Stack, Typography
 } from '@mui/material'
 // barrio/profession lists removed from constants
 import { adminCreateUser, type ApiUser } from '../../api/users'
@@ -30,7 +30,6 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
   const [confirm, setConfirm]       = React.useState('')
   const [dni, setDni]               = React.useState('')
   const [phoneNumber, setPhone]     = React.useState('')
-  const [address, setAddress]       = React.useState('')
   const [role, setRole]             = React.useState<ApiRole>('CLIENTE')
   // barrio/profession removed
   const [addresses, setAddresses] = React.useState<AddressInfo[]>([{ ...EMPTY_ADDR }])
@@ -49,7 +48,7 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
     if (open) {
       // reset al abrir
       setFirstName(''); setLastName(''); setEmail(''); setPassword(''); setConfirm('')
-      setDni(''); setPhone(''); setAddress('')
+      setDni(''); setPhone('')
   setRole('CLIENTE');
       setAddresses([{ ...EMPTY_ADDR }])
       setLoading(false); setError(null)
@@ -69,16 +68,14 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
     confirm:   !confirmOk ? 'No coincide.' : '',
     dni:       !/^\d{7,10}$/.test(dni) ? '7 a 10 dígitos, solo números.' : '',
     phone:     phoneNumber.replace(/\D/g,'').length < 6 ? 'Teléfono incompleto.' : '',
-    address:   address.trim().length < 3 ? 'Ingresá la dirección.' : '',
     // barrio/profession validations removed
   }
 
   const isValid =
     !errors.firstName && !errors.lastName && !errors.email &&
     !errors.password && !errors.confirm && !errors.dni &&
-    !errors.phone && !errors.address &&
-  addressesOk &&
-  !errors.firstName && !errors.lastName && !errors.email && !errors.password && !errors.confirm && !errors.dni && !errors.phone && !errors.address
+    !errors.phone &&
+    addressesOk
 
   async function handleCreate(){
     setError(null)
@@ -134,8 +131,6 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
               error={!!errors.phone} helperText={errors.phone || ' '} fullWidth />
           </Grid>
 
-          <AddressListForm value={addresses} onChange={setAddresses} />
-
           <Grid size = {{ xs: 12, sm: 6 }}>
             <FormControl fullWidth>
               <InputLabel id="role">Rol</InputLabel>
@@ -158,6 +153,7 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
               value={password}
               onChange={(e)=>setPassword(e.target.value)}
               error={!!errors.password} helperText={errors.password || ' '}
+              fullWidth
             />
             <PasswordStrengthBar password={password} />
           </Grid>
@@ -167,9 +163,13 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
               value={confirm}
               onChange={(e)=>setConfirm(e.target.value)}
               error={!!errors.confirm} helperText={errors.confirm || ' '}
+              fullWidth
             />
           </Grid>
         </Grid>
+
+        <Typography variant="h6" mt={3} mb={1}>Domicilios</Typography>
+        <AddressListForm value={addresses} onChange={setAddresses} />
       </DialogContent>
       <DialogActions>
         <Stack direction="row" spacing={1}>

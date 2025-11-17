@@ -8,7 +8,7 @@ import SearchIcon from '@mui/icons-material/Search'
 import AddIcon from '@mui/icons-material/PersonAddAlt1'
 import ShieldIcon from '@mui/icons-material/AdminPanelSettings'
 
-import { getUserById, type UserDTO, getAllUsers } from '../../api/users'
+import { type UserDTO, getAllUsers } from '../../api/users'
 import type { UiRole } from '../../types'
 import { apiRoleToUiRole } from '../../types'
 import AdminCreateUserDialog from '../../components/admin/AdminCreateUserDialog'
@@ -45,40 +45,12 @@ export default function Admin() {
   const [sortAsc, setSortAsc] = React.useState(true)
   const [loading, setLoading] = React.useState(false)
   const [openCreate, setOpenCreate] = React.useState(false)
-
-
-  // búsqueda por ID (el back sólo expone GET /api/users/{id})
-  const [searchId, setSearchId] = React.useState<string>('')
+  const [searchTerm, setSearchTerm] = React.useState('')
 
 
   const [snack, setSnack] = React.useState<{ open: boolean; msg: string; type: 'success' | 'error' | 'info' }>({
     open: false, msg: '', type: 'success'
   })
-
-  async function doSearch() {
-    if (!searchId.trim()) return
-    if (!/^\d+$/.test(searchId)) {
-      setSnack({ open: true, msg: 'ID inválido (debe ser numérico).', type: 'error' })
-      return
-    }
-    setLoading(true)
-    try {
-      const u = await getUserById(Number(searchId))
-      const ui = toUiUser(u)
-      setRows(prev => {
-        const idx = prev.findIndex(x => x.userId === ui.userId)
-        if (idx >= 0) {
-          const next = [...prev]; next[idx] = ui; return sortRows(next)
-        }
-        return sortRows([ui, ...prev])
-      })
-      setSnack({ open: true, msg: `Usuario ${ui.email} cargado.`, type: 'success' })
-    } catch (e: any) {
-      setSnack({ open: true, msg: e?.message || 'No se encontró el usuario', type: 'error' })
-    } finally {
-      setLoading(false)
-    }
-  }
 
   // La creación de usuarios ahora se maneja completamente a través del diálogo AdminCreateUserDialog
 
@@ -108,8 +80,18 @@ export default function Admin() {
 
   function toggleSort() {
     setSortAsc(prev => !prev)
-    setRows(prev => [...prev].sort((a, b) => (!sortAsc ? a.userId - b.userId : b.userId - a.userId)))
   }
+
+  const filteredRows = React.useMemo(() => {
+    const term = searchTerm.trim().toLowerCase()
+    const base = term
+      ? rows.filter(r =>
+          r.name.toLowerCase().includes(term) ||
+          r.email.toLowerCase().includes(term)
+        )
+      : rows
+    return sortRows(base)
+  }, [rows, searchTerm, sortAsc])
 
   return (
     <Paper sx={{ p: 3 }}>
@@ -129,12 +111,12 @@ export default function Admin() {
         </Stack>
       </Stack>
 
-      {/* Búsqueda por ID */}
+      {/* Búsqueda en tiempo real */}
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mb={2}>
         <TextField
-          placeholder="ID de usuario"
-          value={searchId}
-          onChange={e => setSearchId(e.target.value)}
+          placeholder="Buscar por nombre o email"
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -142,9 +124,8 @@ export default function Admin() {
               </InputAdornment>
             ),
           }}
-          sx={{ minWidth: 220 }}
+          sx={{ minWidth: 260 }}
         />
-        <Button variant="contained" onClick={doSearch} disabled={!searchId || loading}>Buscar</Button>
       </Stack>
 
       {/* Tabla (solo lectura) */}
@@ -164,7 +145,7 @@ export default function Admin() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.map(u => (
+            {filteredRows.map(u => (
                 <TableRow key={u.userId} hover>
                 <TableCell>{u.userId}</TableCell>
                 <TableCell>{u.name}</TableCell>
@@ -184,11 +165,11 @@ export default function Admin() {
 
               </TableRow>
             ))}
-            {!rows.length && (
+            {!filteredRows.length && (
               <TableRow>
                 <TableCell colSpan={4}>
                   <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
-                    Buscá por ID para cargar usuarios.
+                    No se encontraron usuarios con ese criterio.
                   </Typography>
                 </TableCell>
               </TableRow>
