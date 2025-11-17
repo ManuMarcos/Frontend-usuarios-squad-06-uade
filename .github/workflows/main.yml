@@ -38,7 +38,9 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
-          script: rm -rf /var/www/frontend/arreglaya/*
+          script: |
+            mkdir -p /var/www/frontend/arreglaya
+            rm -rf /var/www/frontend/arreglaya/*
 
       # 6️⃣ Copiar build a EC2
       - name: Copy build to EC2
@@ -49,6 +51,7 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           source: "arreglaya/build/*"
           target: "/var/www/frontend/arreglaya/"
+          strip_components: 2
 
       # 7️⃣ Recargar NGINX
       - name: Reload NGINX
