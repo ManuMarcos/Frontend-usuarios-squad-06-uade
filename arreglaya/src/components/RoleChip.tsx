@@ -1,7 +1,7 @@
 // src/components/RoleChip.tsx
 import React from 'react'
 import { Chip } from '@mui/material'
-import type { UiRole } from '../auth/routeUtils'
+import { toUiRole } from '../auth/routeUtils'
 
 const map: Record<string, { label: string; color: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' }> = {
   customer:   { label: 'Cliente',     color: 'primary'  },
@@ -9,8 +9,9 @@ const map: Record<string, { label: string; color: 'default' | 'primary' | 'secon
   admin:      { label: 'Admin',       color: 'warning'  },
 }
 
-export default function RoleChip({ role }: { role:  string }) {
-  const r = map[role as string]
+export default function RoleChip({ role }: { role?: string }) {
+  const normalized = role ? toUiRole(role) : undefined
+  const r = normalized ? map[normalized] : undefined
   if (!r) return <Chip size="small" color="default" label={role || 'Desconocido'} />
   return <Chip size="small" color={r.color} label={r.label} />
 }

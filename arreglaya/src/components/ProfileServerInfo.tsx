@@ -34,8 +34,7 @@ export default function ProfileServerInfo({ meta, role, title = 'Datos del backe
     ['DNI',          'dni',         m.dni],
     ['Teléfono',     'phoneNumber', m.phoneNumber ?? m.phone],
     ['Dirección',    'address',     m.address],
-    ['Barrio',       'barrio',      m.barrio],
-    ['Profesión',    'profession',  m.profession],
+    // barrio/profession removed
     ['Estado',       'status',      m.status],
     ['Creado',       'createdAt',   m.createdAt],
     ['Actualizado',  'updatedAt',   m.updatedAt],

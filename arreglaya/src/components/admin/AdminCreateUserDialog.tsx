@@ -4,7 +4,7 @@ import {
   Grid, TextField, Button, FormControl, InputLabel, Select, MenuItem,
   Alert, Stack
 } from '@mui/material'
-import { BARRIOS_CABA, PROFESSIONS } from '../../constants'
+// barrio/profession lists removed from constants
 import { adminCreateUser, type ApiUser } from '../../api/users'
 import PasswordField from '../PasswordField'
 import PasswordStrengthBar from '../PasswordStrengthBar'
@@ -32,8 +32,7 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
   const [phoneNumber, setPhone]     = React.useState('')
   const [address, setAddress]       = React.useState('')
   const [role, setRole]             = React.useState<ApiRole>('CLIENTE')
-  const [barrio, setBarrio]         = React.useState('')
-  const [profession, setProfession] = React.useState('')
+  // barrio/profession removed
   const [addresses, setAddresses] = React.useState<AddressInfo[]>([{ ...EMPTY_ADDR }])
 
 
@@ -51,7 +50,7 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
       // reset al abrir
       setFirstName(''); setLastName(''); setEmail(''); setPassword(''); setConfirm('')
       setDni(''); setPhone(''); setAddress('')
-      setRole('CLIENTE'); setBarrio(''); setProfession('')
+  setRole('CLIENTE');
       setAddresses([{ ...EMPTY_ADDR }])
       setLoading(false); setError(null)
     }
@@ -71,16 +70,15 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
     dni:       !/^\d{7,10}$/.test(dni) ? '7 a 10 dígitos, solo números.' : '',
     phone:     phoneNumber.replace(/\D/g,'').length < 6 ? 'Teléfono incompleto.' : '',
     address:   address.trim().length < 3 ? 'Ingresá la dirección.' : '',
-    barrio:    role === 'CLIENTE'   && !barrio ? 'Elegí un barrio.' : '',
-    profession:role === 'PRESTADOR' && !profession ? 'Elegí una profesión.' : '',
+    // barrio/profession validations removed
   }
 
   const isValid =
     !errors.firstName && !errors.lastName && !errors.email &&
     !errors.password && !errors.confirm && !errors.dni &&
     !errors.phone && !errors.address &&
-    !(role === 'CLIENTE'   && errors.barrio) &&
-    !(role === 'PRESTADOR' && errors.profession) && addressesOk
+  addressesOk &&
+  !errors.firstName && !errors.lastName && !errors.email && !errors.password && !errors.confirm && !errors.dni && !errors.phone && !errors.address
 
   async function handleCreate(){
     setError(null)
@@ -90,8 +88,7 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
       const payload = {
         firstName, lastName, email, password, dni, phoneNumber, role,
         addresses: addresses.filter(a => !isEmptyAddress(a)),
-        ...(role === 'CLIENTE'   ? { barrio } : {}),
-        ...(role === 'PRESTADOR' ? { profession } : {}),
+  // barrio/profession removed from payload
       }
       const user = await adminCreateUser(payload)
       onCreated?.(user)
@@ -153,39 +150,7 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
             </FormControl>
           </Grid>
 
-          {role === 'CLIENTE' && (
-            <Grid size = {{ xs: 12, sm: 6 }}>
-              <FormControl fullWidth>
-                <InputLabel id="barrio">Barrio</InputLabel>
-                <Select
-                  labelId="barrio" label="Barrio"
-                  value={barrio}
-                  onChange={(e)=>setBarrio(e.target.value)}
-                  error={!!errors.barrio}
-                >
-                  <MenuItem value=""><em>Ninguno</em></MenuItem>
-                  {BARRIOS_CABA.map(b=><MenuItem key={b} value={b}>{b}</MenuItem>)}
-                </Select>
-              </FormControl>
-            </Grid>
-          )}
-
-          {role === 'PRESTADOR' && (
-            <Grid size = {{ xs: 12, sm: 6 }}>
-              <FormControl fullWidth>
-                <InputLabel id="profession">Profesión</InputLabel>
-                <Select
-                  labelId="profession" label="Profesión"
-                  value={profession}
-                  onChange={(e)=>setProfession(e.target.value)}
-                  error={!!errors.profession}
-                >
-                  <MenuItem value=""><em>Ninguna</em></MenuItem>
-                  {PROFESSIONS.map(p=><MenuItem key={p} value={p}>{p}</MenuItem>)}
-                </Select>
-              </FormControl>
-            </Grid>
-          )}
+          {/* barrio/profession fields removed */}
 
           <Grid size = {{ xs: 12, sm: 6 }}>
             <PasswordField

@@ -17,8 +17,8 @@ export type BaseProfile = {
   address?: string
 }
 
-export type CustomerProfile = BaseProfile & { barrio?: string }
-export type ContractorProfile = BaseProfile & { barrio?: string; profession?: string; description?: string; skills?: string[] }
+export type CustomerProfile = BaseProfile
+export type ContractorProfile = BaseProfile & { description?: string; skills?: string[] }
 export type AdminProfile = BaseProfile & { note?: string }
 export type AnyProfile = CustomerProfile | ContractorProfile | AdminProfile
 

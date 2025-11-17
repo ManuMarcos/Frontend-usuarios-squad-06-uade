@@ -1,10 +1,24 @@
 // src/pages/profile/CustomerProfile.tsx
 import React from 'react'
 import {
-  Paper, Stack, Typography, Chip, TextField, Button,
-  FormControl, InputLabel, Select, MenuItem, Snackbar, Alert,
-  CircularProgress, Divider
+  Paper,
+  Stack,
+  Typography,
+  Chip,
+  TextField,
+  Button,
+  Snackbar,
+  Alert,
+  CircularProgress,
+  Divider,
+  Box
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
+import { alpha } from '@mui/material/styles'
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline'
+import ContactPhoneIcon from '@mui/icons-material/ContactPhone'
+import HomeWorkOutlinedIcon from '@mui/icons-material/HomeWorkOutlined'
+import FmdGoodOutlinedIcon from '@mui/icons-material/FmdGoodOutlined'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthProvider'
 import { getUserById, updateUserPartial, type ApiUser } from '../../api/users'
@@ -18,7 +32,50 @@ import {
   buildAddressesPatch
 } from '../../utils/address'
 import { isValidEmail } from '../../utils/validators'
-import { BARRIOS_CABA } from '../../constants'
+// barrio removed
+
+type InfoItem = { label: string; value: React.ReactNode }
+
+function InfoCard({ title, icon, items }: { title: string; icon: React.ReactNode; items: InfoItem[] }) {
+  return (
+    <Box
+      sx={{
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 2,
+        p: 2.5,
+        height: '100%',
+        bgcolor: 'background.default'
+      }}
+    >
+      <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+        {icon}
+        <Typography variant="subtitle2" fontWeight={700}>
+          {title}
+        </Typography>
+      </Stack>
+      <Divider sx={{ mb: 1 }} />
+      <Stack spacing={1}>
+        {items.map(({ label, value }) => (
+          <Stack
+            key={label}
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            spacing={1}
+          >
+            <Typography variant="body2" color="text.secondary">
+              {label}
+            </Typography>
+            <Typography variant="body2" fontWeight={600}>
+              {value || '—'}
+            </Typography>
+          </Stack>
+        ))}
+      </Stack>
+    </Box>
+  )
+}
 
 export default function CustomerProfile() {
   const { user, logout, mergeUserMeta } = useAuth()
@@ -37,13 +94,21 @@ export default function CustomerProfile() {
   const [email, setEmail] = React.useState(user?.email ?? '')
   const [dni, setDni] = React.useState('')
   const [phoneNumber, setPhone] = React.useState('')
-  const [barrio, setBarrio] = React.useState('')
+  // barrio removed
 
   // N domicilios
   const [addresses, setAddresses] = React.useState<AddressInfo[]>([{ ...EMPTY_ADDR }])
 
   // Foto de perfil
   const [profileImageUrl, setProfileImageUrl] = React.useState('')
+
+  const filteredAddresses = React.useMemo(
+    () => (addresses || []).filter(a => !isEmptyAddress(a)),
+    [addresses]
+  )
+  const addressItems = filteredAddresses.map((addr, idx) => ({ addr, idx }))
+  const [showAllAddresses, setShowAllAddresses] = React.useState(addressItems.length <= 3)
+  const prevAddressCount = React.useRef(addressItems.length)
 
   // snapshot original para "dirty check"
   const original = React.useRef<ApiUser | null>(null)
@@ -55,21 +120,26 @@ export default function CustomerProfile() {
       try {
         const data = await getUserById(user.id) as ApiUser
         if (!alive) return
-        original.current = data
-
-        setFirstName(data.firstName ?? '')
-        setLastName(data.lastName ?? '')
-        setEmail(data.email ?? user.email)
-        setDni(data.dni ?? '')
-        setPhone(data.phoneNumber ?? '')
-        setBarrio(data.barrio ?? '')
 
         const srcAddrs: AddressInfo[] | undefined = Array.isArray((data as any).addresses)
           ? (data as any).addresses
           : Array.isArray((data as any).address)
           ? (data as any).address
           : undefined
-        setAddresses(srcAddrs && srcAddrs.length ? srcAddrs : [{ ...EMPTY_ADDR }])
+        const normalizedAddrs = srcAddrs && srcAddrs.length
+          ? srcAddrs.map(addr => ({ ...addr }))
+          : []
+        original.current = { ...data, addresses: normalizedAddrs }
+
+        setFirstName(data.firstName ?? '')
+        setLastName(data.lastName ?? '')
+        setEmail(data.email ?? user.email)
+        setDni(data.dni ?? '')
+        setPhone(data.phoneNumber ?? '')
+  // barrio removed
+        setAddresses(
+          normalizedAddrs.length ? normalizedAddrs.map(addr => ({ ...addr })) : [{ ...EMPTY_ADDR }]
+        )
 
         setProfileImageUrl((data as any).profileImageUrl ?? '')
 
@@ -87,6 +157,15 @@ export default function CustomerProfile() {
     load()
     return () => { alive = false }
   }, [user?.id, user?.email, mergeUserMeta])
+
+  React.useEffect(() => {
+    if (addressItems.length <= 3) {
+      setShowAllAddresses(true)
+    } else if (prevAddressCount.current <= 3 && addressItems.length > 3) {
+      setShowAllAddresses(false)
+    }
+    prevAddressCount.current = addressItems.length
+  }, [addressItems.length])
 
   // Validaciones básicas
   const emailOk = isValidEmail(email)
@@ -114,7 +193,7 @@ export default function CustomerProfile() {
       email     !== (o.email     ?? user?.email ?? '') ||
       dni       !== (o.dni       ?? '') ||
       phoneNumber !== (o.phoneNumber ?? '') ||
-      barrio    !== (o.barrio    ?? '') ||
+  // barrio removed from dirty check
       profileImageUrl !== ((o as any).profileImageUrl ?? '')
 
     const addrsDirty =
@@ -132,8 +211,18 @@ export default function CustomerProfile() {
     setEmail(o.email ?? user?.email ?? '')
     setDni(o.dni ?? '')
     setPhone(o.phoneNumber ?? '')
-    setBarrio(o.barrio ?? '')
-    setAddresses(o.addresses?.length ? o.addresses : [{ ...EMPTY_ADDR }])
+  // barrio removed
+    const srcAddrs: AddressInfo[] | undefined = Array.isArray((o as any).addresses)
+      ? (o as any).addresses
+      : Array.isArray((o as any).address)
+      ? (o as any).address
+      : undefined
+    const normalizedAddrs = srcAddrs && srcAddrs.length
+      ? srcAddrs.map(addr => ({ ...addr }))
+      : []
+    setAddresses(
+      normalizedAddrs.length ? normalizedAddrs.map(addr => ({ ...addr })) : [{ ...EMPTY_ADDR }]
+    )
     setProfileImageUrl((o as any).profileImageUrl ?? '')
     setEdit(false)
   }
@@ -157,7 +246,7 @@ export default function CustomerProfile() {
       if (email     !== (base.email     ?? user.email)) patch.email = email
       if (dni       !== (base.dni       ?? '')) patch.dni = dni
       if (phoneNumber !== (base.phoneNumber ?? '')) patch.phoneNumber = phoneNumber
-      if (barrio    !== (base.barrio    ?? '')) patch.barrio = barrio
+  // barrio removed from patch
       if (profileImageUrl !== ((base as any).profileImageUrl ?? '')) patch.profileImageUrl = profileImageUrl
 
       const addrPatch = buildAddressesPatch(base.addresses, addresses)
@@ -179,6 +268,26 @@ export default function CustomerProfile() {
 
   const displayName = [firstName, lastName].filter(Boolean).join(' ') || user?.name || email
 
+  const handleProfileImageChange = React.useCallback((url: string) => {
+    setProfileImageUrl(url)
+    original.current = { ...(original.current || {}), profileImageUrl: url } as ApiUser
+    mergeUserMeta({ profileImageUrl: url })
+  }, [mergeUserMeta])
+
+  const handleProfileImageRemove = React.useCallback(() => {
+    handleProfileImageChange('')
+  }, [handleProfileImageChange])
+
+  const addressesPreview = showAllAddresses ? addressItems : addressItems.slice(0, 3)
+  const hasManyAddresses = addressItems.length > 3
+  const sectionCardSx = {
+    border: '1px solid',
+    borderColor: 'divider',
+    borderRadius: 2,
+    p: 2.5,
+    bgcolor: 'background.default'
+  } as const
+
   if (loading) {
     return (
       <Paper sx={{ p: 3 }}>
@@ -190,133 +299,254 @@ export default function CustomerProfile() {
     )
   }
 
+  const identityInfo: InfoItem[] = [
+    { label: 'Nombre', value: firstName || '—' },
+    { label: 'Apellido', value: lastName || '—' },
+    { label: 'DNI', value: dni || '—' }
+  ]
+
+  const contactInfo: InfoItem[] = [
+    { label: 'Email', value: email || '—' },
+    { label: 'Teléfono', value: phoneNumber || '—' }
+  ]
+
+  const formatAddress = (addr: AddressInfo) => {
+    const line1 = [addr.street, addr.number].filter(Boolean).join(' ')
+    const line2 = [addr.floor && `Piso ${addr.floor}`, addr.apartment && `Depto ${addr.apartment}`]
+      .filter(Boolean)
+      .join(' · ')
+    const line3 = [addr.city, addr.state].filter(Boolean).join(', ')
+    return [line1, line2, line3].filter(Boolean).join(' • ')
+  }
+
   return (
-    <Paper sx={{ p: 3 }}>
-      <Stack spacing={2}>
-        <Stack direction="row" spacing={2} alignItems="center">
-          {/* Avatar editable sólo en modo edición */}
+    <Paper sx={{ p: { xs: 2, md: 4 }, borderRadius: 3 }}>
+      <Stack spacing={3}>
+        <Box
+          sx={(theme) => ({
+            p: { xs: 2, md: 3 },
+            borderRadius: 3,
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            gap: 3,
+            alignItems: { xs: 'flex-start', md: 'center' },
+            border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
+            backgroundImage: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)}, ${alpha(theme.palette.primary.light, 0.15)})`
+          })}
+        >
           <AvatarEditor
             src={profileImageUrl}
             name={displayName}
             userId={user!.id}
-            enabled={edit}
-            onChangeUrl={(url) => setProfileImageUrl(url)}
-            onRemove={() => setProfileImageUrl('')}
+            enabled={true}
+            onChangeUrl={handleProfileImageChange}
+            onRemove={handleProfileImageRemove}
           />
 
-          <Stack>
+          <Stack spacing={0.5} flex={1}>
             <Typography variant="h5" fontWeight={800}>{displayName}</Typography>
             <Typography variant="body2" color="text.secondary">{email}</Typography>
-            <Stack direction="row" spacing={1} mt={1}><Chip label="Cliente" /></Stack>
+            <Stack direction="row" spacing={1} flexWrap="wrap" mt={1}>
+              <Chip label="Cliente" color="primary" variant="outlined" />
+              <Chip
+                icon={<HomeWorkOutlinedIcon fontSize="small" />}
+                label={`${addressItems.length} domicilios`}
+                variant="outlined"
+              />
+            </Stack>
           </Stack>
-        </Stack>
+
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+            {!edit && (
+              <Button variant="outlined" onClick={() => setEdit(true)}>
+                Editar perfil
+              </Button>
+            )}
+            <Button
+              color="error"
+              variant="outlined"
+              onClick={() => { logout(); navigate('/', { replace: true }) }}
+            >
+              Cerrar sesión
+            </Button>
+          </Stack>
+        </Box>
 
         {!edit ? (
-          // ==== LECTURA ====
-          <Stack spacing={1}>
-            <Typography><b>Nombre:</b> {firstName || '—'}</Typography>
-            <Typography><b>Apellido:</b> {lastName || '—'}</Typography>
-            <Typography><b>Email:</b> {email || '—'}</Typography>
-            <Typography><b>DNI:</b> {dni || '—'}</Typography>
-            <Typography><b>Teléfono:</b> {phoneNumber || '—'}</Typography>
-            <Typography><b>Barrio:</b> {barrio || '—'}</Typography>
+          <Stack spacing={3}>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <InfoCard
+                  title="Identidad"
+                  icon={<PersonOutlineIcon fontSize="small" color="primary" />}
+                  items={identityInfo}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <InfoCard
+                  title="Contacto"
+                  icon={<ContactPhoneIcon fontSize="small" color="primary" />}
+                  items={contactInfo}
+                />
+              </Grid>
+            </Grid>
 
-            <Divider sx={{ my: 1 }} />
-            <Typography variant="subtitle1" fontWeight={700}>Domicilios</Typography>
-            <Stack spacing={1}>
-              {(addresses || []).filter(a => !isEmptyAddress(a)).map((a, idx) => (
-                <Stack key={idx} spacing={0.5}>
-                  <Typography variant="body2"><b>Domicilio {idx + 1}</b></Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {a.street} {a.number}{a.floor ? `, Piso ${a.floor}` : ''}{a.apartment ? `, Depto ${a.apartment}` : ''}
-                    <br />{a.city}, {a.state}
-                  </Typography>
-                </Stack>
-              ))}
-              {(!addresses || addresses.length === 0) && <Typography>—</Typography>}
-            </Stack>
+            <Box sx={sectionCardSx}>
+              <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+                <FmdGoodOutlinedIcon color="primary" fontSize="small" />
+                <Typography variant="subtitle2" fontWeight={700}>
+                  Domicilios guardados
+                </Typography>
+                <Chip size="small" label={filteredAddresses.length} />
+              </Stack>
+              <Typography variant="body2" color="text.secondary" mb={2}>
+                Administrá todos los domicilios que usás para tus solicitudes. Podés añadir tantos como necesites.
+              </Typography>
 
-            <Stack direction="row" spacing={1} mt={2}>
-              <Button variant="outlined" onClick={() => setEdit(true)}>Editar</Button>
-              <Button color="error" variant="outlined" onClick={() => { logout(); navigate('/', { replace: true }) }}>
-                Cerrar sesión
-              </Button>
-            </Stack>
+              {addressItems.length ? (
+                <>
+                  <Stack spacing={1.5} sx={{ maxHeight: 320, overflowY: 'auto', pr: 1 }}>
+                    {addressesPreview.map(({ addr, idx }) => (
+                      <Box
+                        key={`addr-view-${idx}`}
+                        sx={{
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          borderRadius: 2,
+                          p: 2,
+                          bgcolor: 'background.paper'
+                        }}
+                      >
+                        <Stack direction="row" spacing={1} alignItems="center" mb={0.5} flexWrap="wrap">
+                          <Chip size="small" label={`#${idx + 1}`} />
+                          <Typography variant="subtitle2" fontWeight={700}>
+                            {[addr.city, addr.state].filter(Boolean).join(', ') || 'Ubicación pendiente'}
+                          </Typography>
+                        </Stack>
+                        <Typography variant="body2" color="text.secondary">
+                          {formatAddress(addr)}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Stack>
+                  {hasManyAddresses && (
+                    <Button
+                      size="small"
+                      onClick={() => setShowAllAddresses(s => !s)}
+                      sx={{ alignSelf: 'flex-start', mt: 1 }}
+                    >
+                      {showAllAddresses ? 'Ver menos' : `Ver todos (${addressItems.length})`}
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  Aún no cargaste domicilios.
+                </Typography>
+              )}
+            </Box>
           </Stack>
         ) : (
-          // ==== EDICIÓN ====
-          <Stack spacing={2}>
+          <Stack spacing={3}>
+            <Box sx={sectionCardSx}>
+              <Stack direction="row" spacing={1} alignItems="center" mb={2}>
+                <PersonOutlineIcon color="primary" fontSize="small" />
+                <Typography variant="subtitle2" fontWeight={700}>
+                  Datos personales
+                </Typography>
+              </Stack>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    label="Nombre"
+                    value={firstName}
+                    onChange={e => setFirstName(e.target.value)}
+                    error={firstName.trim().length < 2}
+                    helperText={firstName.trim().length < 2 ? 'Ingresá tu nombre.' : ' '}
+                    fullWidth
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    label="Apellido"
+                    value={lastName}
+                    onChange={e => setLastName(e.target.value)}
+                    error={lastName.trim().length < 2}
+                    helperText={lastName.trim().length < 2 ? 'Ingresá tu apellido.' : ' '}
+                    fullWidth
+                  />
+                </Grid>
+              </Grid>
+            </Box>
+
+            <Box sx={sectionCardSx}>
+              <Stack direction="row" spacing={1} alignItems="center" mb={2}>
+                <ContactPhoneIcon color="primary" fontSize="small" />
+                <Typography variant="subtitle2" fontWeight={700}>
+                  Contacto
+                </Typography>
+              </Stack>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12 }}>
+                  <TextField
+                    label="Email"
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    error={!emailOk}
+                    helperText={!emailOk ? 'Email inválido.' : ' '}
+                    fullWidth
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    label="DNI"
+                    value={dni}
+                    inputMode="numeric"
+                    onChange={e => setDni(e.target.value.replace(/\D/g, ''))}
+                    error={!dniOk}
+                    helperText={!dniOk ? '7 a 10 dígitos, solo números.' : ' '}
+                    fullWidth
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    label="Teléfono"
+                    value={phoneNumber}
+                    onChange={e => setPhone(e.target.value)}
+                    error={!phoneOk}
+                    helperText={!phoneOk ? 'Teléfono incompleto.' : ' '}
+                    fullWidth
+                  />
+                </Grid>
+              </Grid>
+            </Box>
+
+            <Box sx={sectionCardSx}>
+              <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+                <HomeWorkOutlinedIcon color="primary" fontSize="small" />
+                <Typography variant="subtitle2" fontWeight={700}>
+                  Domicilios
+                </Typography>
+                <Chip size="small" label={addressItems.length} />
+              </Stack>
+              <Typography variant="body2" color="text.secondary" mb={2}>
+                Gestioná todos tus domicilios y mantenelos actualizados. Podés expandir cada uno para editarlo rápidamente.
+              </Typography>
+              <AddressListForm value={addresses} onChange={setAddresses} />
+            </Box>
+
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField
-                label="Nombre"
-                value={firstName}
-                onChange={e => setFirstName(e.target.value)}
-                error={firstName.trim().length < 2}
-                helperText={firstName.trim().length < 2 ? 'Ingresá tu nombre.' : ' '}
+              <Button variant="outlined" onClick={reset} disabled={saving} fullWidth>
+                Cancelar
+              </Button>
+              <Button
+                onClick={save}
+                disabled={saving || !isValid || !isDirty()}
+                variant="contained"
                 fullWidth
-              />
-              <TextField
-                label="Apellido"
-                value={lastName}
-                onChange={e => setLastName(e.target.value)}
-                error={lastName.trim().length < 2}
-                helperText={lastName.trim().length < 2 ? 'Ingresá tu apellido.' : ' '}
-                fullWidth
-              />
-            </Stack>
-
-            <TextField
-              label="Email"
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              error={!emailOk}
-              helperText={!emailOk ? 'Email inválido.' : ' '}
-              fullWidth
-            />
-
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField
-                label="DNI"
-                value={dni}
-                inputMode="numeric"
-                onChange={e => setDni(e.target.value.replace(/\D/g, ''))}
-                error={!dniOk}
-                helperText={!dniOk ? '7 a 10 dígitos, solo números.' : ' '}
-                fullWidth
-              />
-              <TextField
-                label="Teléfono"
-                value={phoneNumber}
-                onChange={e => setPhone(e.target.value)}
-                error={!phoneOk}
-                helperText={!phoneOk ? 'Teléfono incompleto.' : ' '}
-                fullWidth
-              />
-            </Stack>
-
-            <FormControl fullWidth>
-              <InputLabel id="barrio">Barrio</InputLabel>
-              <Select
-                labelId="barrio"
-                label="Barrio"
-                value={barrio}
-                onChange={(e) => setBarrio(e.target.value)}
               >
-                <MenuItem value=""><em>Ninguno</em></MenuItem>
-                {BARRIOS_CABA.map(b => <MenuItem key={b} value={b}>{b}</MenuItem>)}
-              </Select>
-            </FormControl>
-
-            <Divider />
-
-            {/* Edición de N domicilios */}
-            <AddressListForm value={addresses} onChange={setAddresses} />
-
-            <Stack direction="row" spacing={2}>
-              <Button variant="outlined" onClick={reset} disabled={saving}>Cancelar</Button>
-              <Button onClick={save} disabled={saving || !isValid || !isDirty()} variant="contained">
-                {saving ? 'Guardando…' : 'Guardar'}
+                {saving ? 'Guardando…' : 'Guardar cambios'}
               </Button>
             </Stack>
           </Stack>

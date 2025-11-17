@@ -12,8 +12,6 @@ import ContractorsList from './pages/ContractorsList'
 import ContractorDetail from './pages/ContractorDetail'
 import RequestForm from './pages/RequestForm'
 import RequestSuccess from './pages/RequestSuccess'
-import ContractorHome from './pages/contractor/Home'
-import ContractorRequests from './pages/contractor/Requests'
 import Admin from './pages/admin/Admin'
 import { AuthProvider } from './auth/AuthProvider'
 import ProtectedRoute from './auth/ProtectedRoute'
@@ -43,9 +41,6 @@ const router = createBrowserRouter([
       { path: 'contratistas/:id', element: <ProtectedRoute roles={['customer' ]}><ContractorDetail /></ProtectedRoute> },
       { path: 'solicitar/:id', element: <ProtectedRoute roles={['customer' ]}><RequestForm /></ProtectedRoute> },
       { path: 'exito', element: <ProtectedRoute roles={['customer', 'admin']}><RequestSuccess /></ProtectedRoute> },
-
-      { path: 'trabajos', element: <ProtectedRoute roles={['contractor',]}><ContractorHome /></ProtectedRoute> },
-      { path: 'solicitudes', element: <ProtectedRoute roles={['contractor']}><ContractorRequests /></ProtectedRoute> },
 
       { path: 'perfil', element: <ProtectedRoute roles={['customer', 'contractor', 'admin']}><Profile /></ProtectedRoute> },
       { path: 'logout', element: <Logout /> },

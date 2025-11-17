@@ -1,14 +1,27 @@
 // src/pages/profile/ContractorProfile.tsx
 import React from 'react'
 import {
-  Paper, Stack, Typography, Chip, TextField, Button,
-  FormControl, InputLabel, Select, MenuItem,
-  Snackbar, Alert, CircularProgress, Divider
+  Paper,
+  Stack,
+  Typography,
+  Chip,
+  TextField,
+  Button,
+  Snackbar,
+  Alert,
+  CircularProgress,
+  Divider,
+  Box
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
+import { alpha } from '@mui/material/styles'
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline'
+import ContactPhoneIcon from '@mui/icons-material/ContactPhone'
+import FmdGoodOutlinedIcon from '@mui/icons-material/FmdGoodOutlined'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthProvider'
 import { getUserById, updateUserPartial, type ApiUser } from '../../api/users'
-import { PROFESSIONS } from '../../constants'
+// PROFESSIONS removed
 import AddressListForm from '../../components/AddressListForm'
 import AvatarEditor from '../../components/AvatarEditor'
 import type { AddressInfo } from '../../types/address'
@@ -19,6 +32,49 @@ import {
   buildAddressesPatch
 } from '../../utils/address'
 import { isValidEmail } from '../../utils/validators'
+
+type InfoItem = { label: string; value: React.ReactNode }
+
+function InfoCard({ title, icon, items }: { title: string; icon: React.ReactNode; items: InfoItem[] }) {
+  return (
+    <Box
+      sx={{
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 2,
+        p: 2.5,
+        height: '100%',
+        bgcolor: 'background.default'
+      }}
+    >
+      <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+        {icon}
+        <Typography variant="subtitle2" fontWeight={700}>
+          {title}
+        </Typography>
+      </Stack>
+      <Divider sx={{ mb: 1 }} />
+      <Stack spacing={1}>
+        {items.map(({ label, value }) => (
+          <Stack
+            key={label}
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            spacing={1}
+          >
+            <Typography variant="body2" color="text.secondary">
+              {label}
+            </Typography>
+            <Typography variant="body2" fontWeight={600}>
+              {value || '—'}
+            </Typography>
+          </Stack>
+        ))}
+      </Stack>
+    </Box>
+  )
+}
 
 export default function ContractorProfile() {
   const { user, logout, mergeUserMeta } = useAuth()
@@ -38,15 +94,19 @@ export default function ContractorProfile() {
   const [dni, setDni]             = React.useState('')
   const [phoneNumber, setPhone]   = React.useState('')
 
-  // Rol-específico (Prestador)
-  const [profession, setProfession]   = React.useState('')
-  const [description, setDescription] = React.useState('')
-
   // N domicilios
   const [addresses, setAddresses] = React.useState<AddressInfo[]>([{ ...EMPTY_ADDR }])
 
   // Foto de perfil
   const [profileImageUrl, setProfileImageUrl] = React.useState('')
+
+  const filteredAddresses = React.useMemo(
+    () => (addresses || []).filter(a => !isEmptyAddress(a)),
+    [addresses]
+  )
+  const addressItems = filteredAddresses.map((addr, idx) => ({ addr, idx }))
+  const [showAllAddresses, setShowAllAddresses] = React.useState(addressItems.length <= 3)
+  const prevAddressCount = React.useRef(addressItems.length)
 
   // Snapshot original para dirty-check
   const original = React.useRef<ApiUser | null>(null)
@@ -65,9 +125,6 @@ export default function ContractorProfile() {
         setEmail(data.email ?? user.email)
         setDni(data.dni ?? '')
         setPhone(data.phoneNumber ?? '')
-        setProfession((data as any).profession ?? '')
-        setDescription((data as any).description ?? '')
-
         const srcAddrs: AddressInfo[] | undefined = Array.isArray((data as any).addresses)
           ? (data as any).addresses
           : Array.isArray((data as any).address)
@@ -99,13 +156,11 @@ export default function ContractorProfile() {
   const phoneOk = phoneNumber.replace(/\D/g, '').length >= 6
   const addressesOk = (addresses || [])
     .filter(a => Object.keys(validateAddress(a, true)).length === 0).length >= 1
-  const professionOk = !!profession
-
   const isValid =
     firstName.trim().length >= 2 &&
     lastName.trim().length  >= 2 &&
     emailOk && dniOk && phoneOk &&
-    addressesOk && professionOk
+    addressesOk
 
   function isDirty(): boolean {
     const o = original.current
@@ -116,8 +171,6 @@ export default function ContractorProfile() {
       email        !== (o.email     ?? user?.email ?? '') ||
       dni          !== (o.dni       ?? '') ||
       phoneNumber  !== (o.phoneNumber ?? '') ||
-      profession   !== ((o as any).profession ?? '') ||
-      description  !== ((o as any).description ?? '') ||
       profileImageUrl !== ((o as any).profileImageUrl ?? '')
 
     const addrsDirty =
@@ -135,8 +188,6 @@ export default function ContractorProfile() {
     setEmail(o.email ?? user?.email ?? '')
     setDni(o.dni ?? '')
     setPhone(o.phoneNumber ?? '')
-    setProfession((o as any).profession ?? '')
-    setDescription((o as any).description ?? '')
     setAddresses(o.addresses?.length ? o.addresses : [{ ...EMPTY_ADDR }])
     setProfileImageUrl((o as any).profileImageUrl ?? '')
     setEdit(false)
@@ -161,8 +212,6 @@ export default function ContractorProfile() {
       if (email        !== (base.email     ?? user.email)) patch.email = email
       if (dni          !== (base.dni       ?? '')) patch.dni = dni
       if (phoneNumber  !== (base.phoneNumber ?? '')) patch.phoneNumber = phoneNumber
-      if (profession   !== ((base as any).profession ?? '')) patch.profession = profession
-      if (description  !== ((base as any).description ?? '')) patch.description = description
       if (profileImageUrl !== ((base as any).profileImageUrl ?? '')) patch.profileImageUrl = profileImageUrl
 
       const addrPatch = buildAddressesPatch(base.addresses, addresses)
@@ -188,6 +237,35 @@ export default function ContractorProfile() {
     user?.name ||
     email
 
+  const handleProfileImageChange = React.useCallback((url: string) => {
+    setProfileImageUrl(url)
+    original.current = { ...(original.current || {}), profileImageUrl: url } as ApiUser
+    mergeUserMeta({ profileImageUrl: url })
+  }, [mergeUserMeta])
+
+  const handleProfileImageRemove = React.useCallback(() => {
+    handleProfileImageChange('')
+  }, [handleProfileImageChange])
+
+  React.useEffect(() => {
+    if (addressItems.length <= 3) {
+      setShowAllAddresses(true)
+    } else if (prevAddressCount.current <= 3 && addressItems.length > 3) {
+      setShowAllAddresses(false)
+    }
+    prevAddressCount.current = addressItems.length
+  }, [addressItems.length])
+
+  const addressesPreview = showAllAddresses ? addressItems : addressItems.slice(0, 3)
+  const hasManyAddresses = addressItems.length > 3
+  const sectionCardSx = {
+    border: '1px solid',
+    borderColor: 'divider',
+    borderRadius: 2,
+    p: 2.5,
+    bgcolor: 'background.default'
+  } as const
+
   if (loading) {
     return (
       <Paper sx={{ p: 3 }}>
@@ -199,145 +277,252 @@ export default function ContractorProfile() {
     )
   }
 
+  const identityInfo: InfoItem[] = [
+    { label: 'Nombre', value: firstName || '—' },
+    { label: 'Apellido', value: lastName || '—' },
+    { label: 'DNI', value: dni || '—' }
+  ]
+
+  const contactInfo: InfoItem[] = [
+    { label: 'Email', value: email || '—' },
+    { label: 'Teléfono', value: phoneNumber || '—' }
+  ]
+
+  const formatAddress = (addr: AddressInfo) => {
+    const line1 = [addr.street, addr.number].filter(Boolean).join(' ')
+    const line2 = [addr.floor && `Piso ${addr.floor}`, addr.apartment && `Depto ${addr.apartment}`]
+      .filter(Boolean)
+      .join(' · ')
+    const line3 = [addr.city, addr.state].filter(Boolean).join(', ')
+    return [line1, line2, line3].filter(Boolean).join(' • ')
+  }
+
   return (
-    <Paper sx={{ p: 3 }}>
-      <Stack spacing={2}>
-        {/* Header + Avatar */}
-        <Stack direction="row" spacing={2} alignItems="center">
+    <Paper sx={{ p: { xs: 2, md: 4 }, borderRadius: 3 }}>
+      <Stack spacing={3}>
+        <Box
+          sx={(theme) => ({
+            p: { xs: 2, md: 3 },
+            borderRadius: 3,
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            gap: 3,
+            alignItems: { xs: 'flex-start', md: 'center' },
+            border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
+            backgroundImage: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)}, ${alpha(theme.palette.primary.light, 0.15)})`
+          })}
+        >
           <AvatarEditor
             src={profileImageUrl}
             name={displayName}
             userId={user!.id}
-            enabled={edit}
-            onChangeUrl={(url) => setProfileImageUrl(url)}
-            onRemove={() => setProfileImageUrl('')}
+            enabled
+            onChangeUrl={handleProfileImageChange}
+            onRemove={handleProfileImageRemove}
           />
-          <Stack>
+
+          <Stack spacing={0.5} flex={1}>
             <Typography variant="h5" fontWeight={800}>{displayName}</Typography>
             <Typography variant="body2" color="text.secondary">{email}</Typography>
-            <Stack direction="row" spacing={1} mt={1}><Chip label="Prestador" /></Stack>
+            <Stack direction="row" spacing={1} flexWrap="wrap" mt={1}>
+              <Chip label="Prestador" color="primary" variant="outlined" />
+              <Chip
+                icon={<FmdGoodOutlinedIcon fontSize="small" />}
+                label={`${addressItems.length} domicilios`}
+                variant="outlined"
+              />
+            </Stack>
           </Stack>
-        </Stack>
+
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+            {!edit && (
+              <Button variant="outlined" onClick={() => setEdit(true)}>
+                Editar perfil
+              </Button>
+            )}
+            <Button
+              color="error"
+              variant="outlined"
+              onClick={() => { logout(); navigate('/', { replace: true }) }}
+            >
+              Cerrar sesión
+            </Button>
+          </Stack>
+        </Box>
 
         {!edit ? (
-          // ===== Lectura =====
-          <Stack spacing={1}>
-            <Typography><b>Nombre:</b> {firstName || '—'}</Typography>
-            <Typography><b>Apellido:</b> {lastName || '—'}</Typography>
-            <Typography><b>Email:</b> {email || '—'}</Typography>
-            <Typography><b>DNI:</b> {dni || '—'}</Typography>
-            <Typography><b>Teléfono:</b> {phoneNumber || '—'}</Typography>
-            <Typography><b>Profesión:</b> {profession || '—'}</Typography>
-            {description && <Typography><b>Descripción:</b> {description}</Typography>}
+          <Stack spacing={3}>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <InfoCard
+                  title="Identidad"
+                  icon={<PersonOutlineIcon fontSize="small" color="primary" />}
+                  items={identityInfo}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <InfoCard
+                  title="Contacto"
+                  icon={<ContactPhoneIcon fontSize="small" color="primary" />}
+                  items={contactInfo}
+                />
+              </Grid>
+            </Grid>
 
-            <Divider sx={{ my: 1 }} />
-            <Typography variant="subtitle1" fontWeight={700}>Domicilios</Typography>
-            <Stack spacing={1}>
-              {(addresses || []).filter(a => !isEmptyAddress(a)).map((a, idx) => (
-                <Stack key={idx} spacing={0.5}>
-                  <Typography variant="body2"><b>Domicilio {idx + 1}</b></Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {a.street} {a.number}{a.floor ? `, Piso ${a.floor}` : ''}{a.apartment ? `, Depto ${a.apartment}` : ''}
-                    <br />{a.city}, {a.state}
-                  </Typography>
-                </Stack>
-              ))}
-              {(!addresses || addresses.length === 0) && <Typography>—</Typography>}
-            </Stack>
+            <Box sx={sectionCardSx}>
+              <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+                <FmdGoodOutlinedIcon color="primary" fontSize="small" />
+                <Typography variant="subtitle2" fontWeight={700}>Domicilios guardados</Typography>
+                <Chip size="small" label={filteredAddresses.length} />
+              </Stack>
+              <Typography variant="body2" color="text.secondary" mb={2}>
+                Podés agregar tantos domicilios como zonas de cobertura tengas asignadas.
+              </Typography>
 
-            <Stack direction="row" spacing={1} mt={2}>
-              <Button variant="outlined" onClick={() => setEdit(true)}>Editar</Button>
-              <Button
-                color="error"
-                variant="outlined"
-                onClick={() => { logout(); navigate('/', { replace: true }) }}
-              >
-                Cerrar sesión
-              </Button>
-            </Stack>
+              {addressItems.length ? (
+                <>
+                  <Stack spacing={1.5} sx={{ maxHeight: 320, overflowY: 'auto', pr: 1 }}>
+                    {addressesPreview.map(({ addr, idx }) => (
+                      <Box
+                        key={`addr-view-${idx}`}
+                        sx={{
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          borderRadius: 2,
+                          p: 2,
+                          bgcolor: 'background.paper'
+                        }}
+                      >
+                        <Stack direction="row" spacing={1} alignItems="center" mb={0.5} flexWrap="wrap">
+                          <Chip size="small" label={`#${idx + 1}`} />
+                          <Typography variant="subtitle2" fontWeight={700}>
+                            {[addr.city, addr.state].filter(Boolean).join(', ') || 'Ubicación pendiente'}
+                          </Typography>
+                        </Stack>
+                        <Typography variant="body2" color="text.secondary">
+                          {formatAddress(addr)}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Stack>
+                  {hasManyAddresses && (
+                    <Button
+                      size="small"
+                      onClick={() => setShowAllAddresses(s => !s)}
+                      sx={{ alignSelf: 'flex-start', mt: 1 }}
+                    >
+                      {showAllAddresses ? 'Ver menos' : `Ver todos (${addressItems.length})`}
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  Aún no cargaste domicilios.
+                </Typography>
+              )}
+            </Box>
           </Stack>
         ) : (
-          // ===== Edición =====
-          <Stack spacing={2}>
+          <Stack spacing={3}>
+            <Box sx={sectionCardSx}>
+              <Stack direction="row" spacing={1} alignItems="center" mb={2}>
+                <PersonOutlineIcon color="primary" fontSize="small" />
+                <Typography variant="subtitle2" fontWeight={700}>
+                  Datos personales
+                </Typography>
+              </Stack>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    label="Nombre"
+                    value={firstName}
+                    onChange={e => setFirstName(e.target.value)}
+                    error={firstName.trim().length < 2}
+                    helperText={firstName.trim().length < 2 ? 'Ingresá tu nombre.' : ' '}
+                    fullWidth
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    label="Apellido"
+                    value={lastName}
+                    onChange={e => setLastName(e.target.value)}
+                    error={lastName.trim().length < 2}
+                    helperText={lastName.trim().length < 2 ? 'Ingresá tu apellido.' : ' '}
+                    fullWidth
+                  />
+                </Grid>
+              </Grid>
+            </Box>
+
+            <Box sx={sectionCardSx}>
+              <Stack direction="row" spacing={1} alignItems="center" mb={2}>
+                <ContactPhoneIcon color="primary" fontSize="small" />
+                <Typography variant="subtitle2" fontWeight={700}>
+                  Contacto
+                </Typography>
+              </Stack>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12 }}>
+                  <TextField
+                    label="Email"
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    error={!emailOk}
+                    helperText={!emailOk ? 'Email inválido.' : ' '}
+                    fullWidth
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    label="DNI"
+                    value={dni}
+                    inputMode="numeric"
+                    onChange={e => setDni(e.target.value.replace(/\D/g, ''))}
+                    error={!dniOk}
+                    helperText={!dniOk ? '7 a 10 dígitos, solo números.' : ' '}
+                    fullWidth
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    label="Teléfono"
+                    value={phoneNumber}
+                    onChange={e => setPhone(e.target.value)}
+                    error={!phoneOk}
+                    helperText={!phoneOk ? 'Teléfono incompleto.' : ' '}
+                    fullWidth
+                  />
+                </Grid>
+              </Grid>
+            </Box>
+
+            <Box sx={sectionCardSx}>
+              <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+                <FmdGoodOutlinedIcon color="primary" fontSize="small" />
+                <Typography variant="subtitle2" fontWeight={700}>
+                  Domicilios
+                </Typography>
+                <Chip size="small" label={addressItems.length} />
+              </Stack>
+              <Typography variant="body2" color="text.secondary" mb={2}>
+                Mantené tus domicilios actualizados para recibir pedidos cerca de cada zona.
+              </Typography>
+              <AddressListForm value={addresses} onChange={setAddresses} />
+            </Box>
+
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField
-                label="Nombre"
-                value={firstName}
-                onChange={e => setFirstName(e.target.value)}
-                error={firstName.trim().length < 2}
-                helperText={firstName.trim().length < 2 ? 'Ingresá tu nombre.' : ' '}
+              <Button variant="outlined" onClick={reset} disabled={saving} fullWidth>
+                Cancelar
+              </Button>
+              <Button
+                onClick={save}
+                disabled={saving || !isValid || !isDirty()}
+                variant="contained"
                 fullWidth
-              />
-              <TextField
-                label="Apellido"
-                value={lastName}
-                onChange={e => setLastName(e.target.value)}
-                error={lastName.trim().length < 2}
-                helperText={lastName.trim().length < 2 ? 'Ingresá tu apellido.' : ' '}
-                fullWidth
-              />
-            </Stack>
-
-            <TextField
-              label="Email"
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              error={!emailOk}
-              helperText={!emailOk ? 'Email inválido.' : ' '}
-              fullWidth
-            />
-
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField
-                label="DNI"
-                value={dni}
-                inputMode="numeric"
-                onChange={e => setDni(e.target.value.replace(/\D/g, ''))}
-                error={!dniOk}
-                helperText={!dniOk ? '7 a 10 dígitos, solo números.' : ' '}
-                fullWidth
-              />
-              <TextField
-                label="Teléfono"
-                value={phoneNumber}
-                onChange={e => setPhone(e.target.value)}
-                error={!phoneOk}
-                helperText={!phoneOk ? 'Teléfono incompleto.' : ' '}
-                fullWidth
-              />
-            </Stack>
-
-            <FormControl fullWidth>
-              <InputLabel id="profession">Profesión</InputLabel>
-              <Select
-                labelId="profession"
-                label="Profesión"
-                value={profession}
-                onChange={(e) => setProfession(e.target.value)}
               >
-                <MenuItem value=""><em>Ninguna</em></MenuItem>
-                {PROFESSIONS.map(p => <MenuItem key={p} value={p}>{p}</MenuItem>)}
-              </Select>
-            </FormControl>
-
-            <TextField
-              label="Descripción (opcional)"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              fullWidth
-              multiline minRows={3}
-            />
-
-            <Divider />
-
-            {/* Edición de N domicilios */}
-            <AddressListForm value={addresses} onChange={setAddresses} />
-
-            <Stack direction="row" spacing={2}>
-              <Button variant="outlined" onClick={reset} disabled={saving}>Cancelar</Button>
-              <Button onClick={save} disabled={saving || !isValid || !isDirty()} variant="contained">
-                {saving ? 'Guardando…' : 'Guardar'}
+                {saving ? 'Guardando…' : 'Guardar cambios'}
               </Button>
             </Stack>
           </Stack>

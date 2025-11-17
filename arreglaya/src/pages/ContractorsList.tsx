@@ -6,10 +6,7 @@ import { Link as RouterLink } from 'react-router-dom'
 
 export default function ContractorsList(){
   const { contractors, selectedFilters } = useStore()
-  const list = contractors.filter(c =>
-    (!selectedFilters.profession || c.profession === selectedFilters.profession) &&
-    (!selectedFilters.barrio || c.barrio === selectedFilters.barrio)
-  )
+  const list = contractors
   return (
     <Grid container spacing={2}>
       {list.map(c => (

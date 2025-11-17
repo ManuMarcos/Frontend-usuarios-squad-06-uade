@@ -1,17 +1,19 @@
 import React, { useState } from "react";
+import { Button, LinearProgress, Stack, Typography } from "@mui/material";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import ImageIcon from "@mui/icons-material/Image";
 
 type Props = {
   userId: number;
   onUploaded: (url: string) => void;
+  disabled?: boolean;
 };
 
 // cast a any para que TS no rompa
 const _env = (import.meta as any).env || {};
-const API_BASE: string = _env.VITE_API_URL || "http://localhost:8080";
+const API_BASE: string = _env.VITE_API_URL || "http://localhost:8081";
 
-const S3_BASE: string = _env.VITE_S3_PUBLIC_BASE || "";
-
-const ProfileImageUploader: React.FC<Props> = ({ userId, onUploaded }) => {
+const ProfileImageUploader: React.FC<Props> = ({ userId, onUploaded, disabled = false }) => {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -32,45 +34,34 @@ const ProfileImageUploader: React.FC<Props> = ({ userId, onUploaded }) => {
     setErr(null);
 
     try {
-      const ext = file.type.split("/")[1] || "jpg";
-      const wantedKey = `users/${userId}/profile.${ext}`;
+      const token = localStorage.getItem("auth.token");
+      const formData = new FormData();
+      formData.append("file", file);
 
-      // 1) pedir URL prefirmada al backend
-      const presignRes = await fetch(`${API_BASE}/api/files/presign-upload`, {
+      const uploadHeaders: Record<string, string> = {};
+      if (token) uploadHeaders.Authorization = `Bearer ${token}`;
+
+      const uploadRes = await fetch(`${API_BASE}/api/files/presign-upload`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          key: wantedKey,
-          contentType: file.type,
-          expiresIn: 600,
-        }),
+        headers: uploadHeaders,
+        body: formData,
       });
 
-      if (!presignRes.ok) {
-        throw new Error("No se pudo obtener la URL de subida");
+      if (!uploadRes.ok) {
+        let msg = "No se pudo subir la imagen";
+        try {
+          const errJson = await uploadRes.json();
+          msg = errJson?.error || msg;
+        } catch {
+          // ignore parse error
+        }
+        throw new Error(msg);
       }
 
-      const presignJson = await presignRes.json();
-      const uploadUrl: string = presignJson.url;
-      const headers: Record<string, string> = presignJson.headers || {};
-      const finalKey: string = presignJson.key || wantedKey;
+      const { imageUrl } = await uploadRes.json();
+      if (!imageUrl) throw new Error("Respuesta inválida del servidor");
 
-      // 2) subir a S3 con la URL prefirmada
-      const putRes = await fetch(uploadUrl, {
-        method: "PUT",
-        headers,
-        body: file,
-      });
-      if (!putRes.ok) {
-        throw new Error("No se pudo subir la imagen");
-      }
-
-      // 3) armar la URL pública
-      const publicUrl = S3_BASE ? `${S3_BASE}/${finalKey}` : finalKey;
-
-      onUploaded(publicUrl);
+      onUploaded(imageUrl);
     } catch (e: any) {
       setErr(e.message || "Error subiendo imagen");
     } finally {
@@ -79,13 +70,67 @@ const ProfileImageUploader: React.FC<Props> = ({ userId, onUploaded }) => {
   };
 
   return (
-    <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-      <input type="file" accept="image/*" onChange={handleChange} />
-      <button onClick={handleUpload} disabled={loading || !file}>
-        {loading ? "Subiendo..." : "Subir"}
-      </button>
-      {err && <span style={{ color: "red", fontSize: 12 }}>{err}</span>}
-    </div>
+    <Stack spacing={1} sx={{ width: "100%" }}>
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={1}
+        alignItems={{ xs: "flex-start", sm: "center" }}
+        sx={{ flexWrap: "wrap", width: "100%" }}
+      >
+        <Button
+          variant="outlined"
+          component="label"
+          startIcon={<ImageIcon />}
+          disabled={loading || disabled}
+        >
+          Elegir archivo
+          <input
+            hidden
+            type="file"
+            accept="image/*"
+            onChange={handleChange}
+            disabled={disabled}
+          />
+        </Button>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            maxWidth: "100%",
+          }}
+          title={file?.name}
+        >
+          {file ? file.name : "Ningún archivo seleccionado"}
+        </Typography>
+      </Stack>
+
+      <Stack direction="row" spacing={1} alignItems="center">
+        <Button
+          variant="contained"
+          startIcon={<CloudUploadIcon />}
+          onClick={handleUpload}
+          disabled={loading || !file || disabled}
+        >
+          {loading ? "Subiendo..." : "Subir imagen"}
+        </Button>
+        {err && (
+          <Typography variant="body2" color="error">
+            {err}
+          </Typography>
+        )}
+      </Stack>
+
+      {loading && <LinearProgress />}
+
+      <Typography variant="caption" color="text.secondary">
+        Formatos recomendados: JPG/PNG, máximo 5 MB.
+      </Typography>
+    </Stack>
   );
 };
 

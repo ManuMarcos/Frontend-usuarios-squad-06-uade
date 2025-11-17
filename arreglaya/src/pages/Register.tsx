@@ -11,7 +11,7 @@ import PasswordStrengthBar from '../components/PasswordStrengthBar'
 import AddressListForm from '../components/AddressListForm'
 import type { AddressInfo } from '../types/address'
 import { EMPTY_ADDR, validateAddress, isEmptyAddress } from '../utils/address'
-import { BARRIOS_CABA, PROFESSIONS } from '../constants'
+// barrio/profession constants removed
 import { ApiRole } from '../types'
 
 type UiRole = 'customer' | 'contractor' | 'admin'
@@ -33,8 +33,6 @@ export default function Register(){
 
   // Rol + específicos
   const [role, setRole]           = React.useState<UiRole>('customer')
-  const [barrio, setBarrio]       = React.useState('')
-  const [profession, setProfession] = React.useState('')
 
   // N domicilios
  const [addresses, setAddresses] = React.useState<AddressInfo[]>([{ ...EMPTY_ADDR }])
@@ -58,10 +56,8 @@ export default function Register(){
   const addressesOk = (addresses || []).filter(a => Object.keys(validateAddress(a, true)).length === 0).length >= 1
 
 
-  const roleOk =
-    (role === 'customer'   && !!barrio) ||
-    (role === 'contractor' && !!profession) ||
-    (role === 'admin')
+  // No requerimos campos extra por rol (barrio/profession fueron removidos)
+  const roleOk = true
 
   const formValid =
     firstName.trim().length >= 2 &&
@@ -155,6 +151,8 @@ export default function Register(){
                   </Select>
                 </FormControl>
               </Grid>
+
+              {/* barrio/profession fields removed */}
 
               <Grid size={{ xs: 12, sm: 6 }}>
                 <PasswordField

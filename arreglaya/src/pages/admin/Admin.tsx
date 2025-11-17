@@ -2,38 +2,40 @@ import React from 'react'
 import {
   Paper, Stack, Typography, TextField, IconButton, Tooltip, Snackbar, Alert,
   Dialog, DialogTitle, DialogContent, DialogActions, Button, Table, TableBody,
-  TableCell, TableContainer, TableHead, TableRow, Chip, InputAdornment, Box, MenuItem
+  TableCell, TableContainer, TableHead, TableRow, Chip, InputAdornment, Box
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import AddIcon from '@mui/icons-material/PersonAddAlt1'
 import ShieldIcon from '@mui/icons-material/AdminPanelSettings'
 
-import RoleChip from '../../components/RoleChip' // usa UiRole (customer|contractor|admin)
-
 import { getUserById, type UserDTO, getAllUsers } from '../../api/users'
-import type { ApiRole, UiRole } from '../../types'
+import type { UiRole } from '../../types'
 import { apiRoleToUiRole } from '../../types'
 import AdminCreateUserDialog from '../../components/admin/AdminCreateUserDialog'
 import DeactivateUserButton from '../../components/admin/DeactivateUserButton'
 import UserStatusChip from '../../components/admin/UserStatusChip'
 
-type UiUser = { userId: number; name: string; email: string; role: UiRole; isActive?: boolean, roleName?: string }
+type UiUser = { userId: number; name: string; email: string; role: UiRole; isActive?: boolean }
 
-// Mapa de rol (API → UI)
-const apiToUi: Record<ApiRole, UiRole> = {
-  CLIENTE: 'customer',
-  PRESTADOR: 'contractor',
-  ADMIN: 'admin',
-  PROVEEDOR: 'contractor',
+const roleLabelByUi: Record<UiRole, string> = {
+  customer: 'Cliente',
+  contractor: 'Prestador',
+  admin: 'Admin',
 }
 
 function toUiUser(u: UserDTO): UiUser {
+  const rawRole =
+    typeof u.role === 'string'
+      ? u.role
+      : (u.role as any)?.name ||
+        (u.role as any)?.description ||
+        u.roleDescription ||
+        undefined
   return {
     userId: u.userId,
     name: `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email.split('@')[0],
     email: u.email,
-    role: apiToUi[u.roleDescription],
-    roleName: u.role?.name,
+    role: apiRoleToUiRole(rawRole),
     isActive: u.active,
   }
 }
@@ -158,9 +160,7 @@ export default function Admin() {
                 <TableCell>{u.name}</TableCell>
                 <TableCell>{u.email}</TableCell>
                 <TableCell>
-                  <Box sx={{ display: 'flex', justifyContent: 'left' }}>
-                    <RoleChip role={u.roleName ?? 'Desconocido'} />
-                  </Box>
+                  <Typography variant="body2">{roleLabelByUi[u.role]}</Typography>
                 </TableCell>
                 <TableCell><UserStatusChip isActive={u.isActive} /></TableCell>
                 <TableCell align="right">

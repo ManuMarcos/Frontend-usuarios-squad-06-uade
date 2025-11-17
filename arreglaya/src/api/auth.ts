@@ -11,8 +11,7 @@ export interface RegisterDTO {
   phoneNumber?: string
   addresses: AddressInfo[]
   role: ApiRole
-  barrio?: string
-  profession?: string
+  // barrio & profession removed
 }
 
 export async function login(email: string, password: string) {

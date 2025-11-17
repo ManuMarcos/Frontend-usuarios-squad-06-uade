@@ -42,7 +42,7 @@ export default function ContractorDetail(){
   // Nombre y extras (intentamos complementar con perfil local si existe)
   const local = loadProfile()
   const fullName = `${data.firstName ?? ''} ${data.lastName ?? ''}`.trim() || local.name || data.email.split('@')[0]
-  const barrio = data.address || (local as any).barrio || ''
+  const barrio = data.address || ''
   const phone = data.phoneNumber || (local as any).phone || ''
   const description = (local as any).description || ''
   const skills: string[] = (local as any).skills || []
@@ -92,7 +92,7 @@ export default function ContractorDetail(){
             {(barrio || phone) && (
               <>
                 <Typography fontWeight={700} mt={2}>Contacto</Typography>
-                {barrio && <Typography>Barrio: {barrio}</Typography>}
+                {barrio && <Typography>Dirección: {barrio}</Typography>}
                 {phone && <Typography>Tel: {phone}</Typography>}
               </>
             )}

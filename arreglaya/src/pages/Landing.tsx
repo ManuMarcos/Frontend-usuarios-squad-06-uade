@@ -36,7 +36,7 @@ export default function Landing(){
         <Typography variant="body2">¡Empezá a buscar!</Typography>
         <Stack direction="row" spacing={2} justifyContent="center">
           <Button onClick={()=>navigate('/buscar')}>Buscar Contratista</Button>
-          <Button onClick={()=>navigate('/trabajos')} variant="outlined">Ofrezco Servicios</Button>
+          <Button onClick={()=>navigate('/login')} variant="outlined">Ofrezco Servicios</Button>
         </Stack>
       </Stack>
     </Box>

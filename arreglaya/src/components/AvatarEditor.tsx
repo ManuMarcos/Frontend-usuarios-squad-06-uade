@@ -6,6 +6,7 @@ import {
 } from '@mui/material'
 import CameraAltRoundedIcon from '@mui/icons-material/CameraAltRounded'
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
+import { updateUserPartial } from '../api/users'
 import ProfileImageUploader from './ProfileImageUploader'
 
 type Props = {
@@ -26,7 +27,39 @@ export default function AvatarEditor({
   onRemove
 }: Props) {
   const [open, setOpen] = React.useState(false)
+  const [saving, setSaving] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+  const [successMsg, setSuccessMsg] = React.useState<string | null>(null)
   const initials = (name || '').trim()[0]?.toUpperCase() || '?'
+
+  const persistProfileImage = React.useCallback(async (nextUrl: string | null) => {
+    const prev = src ?? ''
+    setSaving(true)
+    setError(null)
+    setSuccessMsg(null)
+    onChangeUrl(nextUrl ?? '')
+    try {
+      await updateUserPartial(userId, { profileImageUrl: nextUrl } as any)
+      if (!nextUrl && onRemove) {
+        onRemove()
+      }
+      setSuccessMsg(nextUrl ? 'Foto actualizada.' : 'Foto eliminada.')
+    } catch (err: any) {
+      const msg = err?.response?.data || err?.message || 'No se pudo actualizar la foto.'
+      setError(msg)
+      onChangeUrl(prev)
+    } finally {
+      setSaving(false)
+    }
+  }, [src, userId, onChangeUrl, onRemove])
+
+  const handleUploaded = React.useCallback((url: string) => {
+    void persistProfileImage(url)
+  }, [persistProfileImage])
+
+  const handleRemove = React.useCallback(() => {
+    void persistProfileImage(null)
+  }, [persistProfileImage])
 
   return (
     <>
@@ -83,8 +116,25 @@ export default function AvatarEditor({
             {/* Uploader real: delegamos la subida y recibimos la URL final */}
             <ProfileImageUploader
               userId={userId}
-              onUploaded={(url: string) => onChangeUrl(url)}
+              onUploaded={handleUploaded}
+              disabled={saving}
             />
+
+            {saving && (
+              <Typography variant="body2" color="text.secondary">
+                Guardando foto…
+              </Typography>
+            )}
+            {!saving && successMsg && (
+              <Typography variant="body2" color="success.main">
+                {successMsg}
+              </Typography>
+            )}
+            {error && (
+              <Typography variant="body2" color="error">
+                {error}
+              </Typography>
+            )}
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
@@ -92,7 +142,8 @@ export default function AvatarEditor({
             <Button
               color="inherit"
               startIcon={<DeleteOutlineRoundedIcon />}
-              onClick={() => { onRemove(); onChangeUrl('') }}
+              onClick={handleRemove}
+              disabled={saving}
             >
               Quitar foto
             </Button>
