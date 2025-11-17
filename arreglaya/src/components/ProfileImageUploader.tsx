@@ -2,16 +2,13 @@ import React, { useState } from "react";
 import { Button, LinearProgress, Stack, Typography } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import ImageIcon from "@mui/icons-material/Image";
+import api from "../api/http";
 
 type Props = {
   userId: number;
   onUploaded: (url: string) => void;
   disabled?: boolean;
 };
-
-// cast a any para que TS no rompa
-const _env = (import.meta as any).env || {};
-const API_BASE: string = _env.VITE_API_URL || "http://localhost:8081";
 
 const ProfileImageUploader: React.FC<Props> = ({ userId, onUploaded, disabled = false }) => {
   const [file, setFile] = useState<File | null>(null);
@@ -34,36 +31,26 @@ const ProfileImageUploader: React.FC<Props> = ({ userId, onUploaded, disabled = 
     setErr(null);
 
     try {
-      const token = localStorage.getItem("auth.token");
       const formData = new FormData();
       formData.append("file", file);
 
-      const uploadHeaders: Record<string, string> = {};
-      if (token) uploadHeaders.Authorization = `Bearer ${token}`;
+      const uploadRes = await api.post(
+        "/api/files/presign-upload",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
 
-      const uploadRes = await fetch(`${API_BASE}/api/files/presign-upload`, {
-        method: "POST",
-        headers: uploadHeaders,
-        body: formData,
-      });
-
-      if (!uploadRes.ok) {
-        let msg = "No se pudo subir la imagen";
-        try {
-          const errJson = await uploadRes.json();
-          msg = errJson?.error || msg;
-        } catch {
-          // ignore parse error
-        }
-        throw new Error(msg);
-      }
-
-      const { imageUrl } = await uploadRes.json();
+      const { imageUrl } = uploadRes.data || {};
       if (!imageUrl) throw new Error("Respuesta inválida del servidor");
 
       onUploaded(imageUrl);
     } catch (e: any) {
-      setErr(e.message || "Error subiendo imagen");
+      const msg =
+        e?.response?.data?.error ||
+        e?.response?.data?.message ||
+        e?.message ||
+        "Error subiendo imagen";
+      setErr(msg);
     } finally {
       setLoading(false);
     }
