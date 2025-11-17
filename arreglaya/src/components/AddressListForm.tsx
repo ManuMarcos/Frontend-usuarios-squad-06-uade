@@ -165,6 +165,7 @@ export default function AddressListForm({ value, onChange, disabled }: Props) {
                     onChange={e=>setAt(i,'state',e.target.value)}
                     error={!!errors[i].state}
                     helperText={errors[i].state || ' '}
+                    inputProps={{ maxLength: 55 }}
                     fullWidth
                     disabled={disabled}
                   />
@@ -177,6 +178,7 @@ export default function AddressListForm({ value, onChange, disabled }: Props) {
                     onChange={e=>setAt(i,'city',e.target.value)}
                     error={!!errors[i].city}
                     helperText={errors[i].city || ' '}
+                    inputProps={{ maxLength: 40 }}
                     fullWidth
                     disabled={disabled}
                   />
@@ -189,6 +191,7 @@ export default function AddressListForm({ value, onChange, disabled }: Props) {
                     onChange={e=>setAt(i,'street',e.target.value)}
                     error={!!errors[i].street}
                     helperText={errors[i].street || ' '}
+                    inputProps={{ maxLength: 40 }}
                     fullWidth
                     disabled={disabled}
                   />
@@ -201,6 +204,7 @@ export default function AddressListForm({ value, onChange, disabled }: Props) {
                     onChange={e=>setAt(i,'number',e.target.value)}
                     error={!!errors[i].number}
                     helperText={errors[i].number || ' '}
+                    inputProps={{ maxLength: 10 }}
                     fullWidth
                     disabled={disabled}
                   />
@@ -211,6 +215,7 @@ export default function AddressListForm({ value, onChange, disabled }: Props) {
                     label="Piso"
                     value={it.floor || ''}
                     onChange={e=>setAt(i,'floor',e.target.value)}
+                    inputProps={{ maxLength: 3 }}
                     fullWidth
                     disabled={disabled}
                   />
@@ -221,6 +226,7 @@ export default function AddressListForm({ value, onChange, disabled }: Props) {
                     label="Depto"
                     value={it.apartment || ''}
                     onChange={e=>setAt(i,'apartment',e.target.value)}
+                    inputProps={{ maxLength: 3 }}
                     fullWidth
                     disabled={disabled}
                   />
