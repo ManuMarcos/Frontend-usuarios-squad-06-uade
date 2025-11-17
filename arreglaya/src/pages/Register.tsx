@@ -162,6 +162,7 @@ export default function Register(){
                   onBlur={()=>setTouched(t=>({...t, password:true}))}
                   error={touched.password && !pwOk}
                   helperText={touched.password && !pwOk ? 'Usá 8+ caráct., mayús, minús, número y símbolo.' : ' '}
+                  fullWidth
                 />
                 <PasswordStrengthBar password={password} />
               </Grid>
@@ -173,6 +174,7 @@ export default function Register(){
                   onBlur={()=>setTouched(t=>({...t, confirm:true}))}
                   error={touched.confirm && !confOk}
                   helperText={touched.confirm && !confOk ? 'No coincide.' : ' '}
+                  fullWidth
                 />
               </Grid>
             </Grid>
