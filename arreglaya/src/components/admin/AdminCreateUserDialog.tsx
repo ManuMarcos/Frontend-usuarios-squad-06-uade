@@ -60,6 +60,18 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
   const pwOk = criteria.length && criteria.upper && criteria.lower && criteria.number && criteria.symbol
   const confirmOk = password === confirm
 
+  const phoneDigits = phoneNumber.replace(/\D/g,'').length
+  const phonePattern = /^[0-9()+\- ]*$/
+  const phonePatternOk = phonePattern.test(phoneNumber)
+  const phoneLenOk = phoneNumber.trim().length <= 40
+  const phoneMsg = !phonePatternOk
+    ? 'Solo números, espacios, +, - y ().'
+    : !phoneLenOk
+    ? 'Máximo 40 caracteres.'
+    : phoneDigits < 6
+    ? 'Ingresá al menos 6 dígitos.'
+    : ''
+
   const errors = {
     firstName: firstName.trim().length < 2 ? 'Ingresá el nombre.' : '',
     lastName:  lastName.trim().length  < 2 ? 'Ingresá el apellido.' : '',
@@ -67,7 +79,7 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
     password:  !pwOk ? 'Usá 8+ caráct., mayús, minús, número y símbolo.' : '',
     confirm:   !confirmOk ? 'No coincide.' : '',
     dni:       !/^\d{7,10}$/.test(dni) ? '7 a 10 dígitos, solo números.' : '',
-    phone:     phoneNumber.replace(/\D/g,'').length < 6 ? 'Teléfono incompleto.' : '',
+    phone:     phoneMsg,
     // barrio/profession validations removed
   }
 
@@ -107,12 +119,14 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
           <Grid size = {{ xs: 12, sm: 6 }}>
             <TextField label="Nombre" value={firstName}
               onChange={(e)=>setFirstName(e.target.value)}
-              error={!!errors.firstName} helperText={errors.firstName || ' '} fullWidth />
+              inputProps={{ maxLength: 20 }}
+              error={!!errors.firstName} helperText={errors.firstName || `${firstName.length}/40`} fullWidth />
           </Grid>
           <Grid size = {{ xs: 12, sm: 6 }}>
             <TextField label="Apellido" value={lastName}
               onChange={(e)=>setLastName(e.target.value)}
-              error={!!errors.lastName} helperText={errors.lastName || ' '} fullWidth />
+              inputProps={{ maxLength: 20 }}
+              error={!!errors.lastName} helperText={errors.lastName || `${lastName.length}/40`} fullWidth />
           </Grid>
 
           <Grid size = {{ xs: 12, sm: 6 }}>
@@ -128,7 +142,8 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
           <Grid size = {{ xs: 12, sm: 3 }}>
             <TextField label="Teléfono" value={phoneNumber}
               onChange={(e)=>setPhone(e.target.value)}
-              error={!!errors.phone} helperText={errors.phone || ' '} fullWidth />
+              inputProps={{ maxLength: 20 }}
+              error={!!errors.phone} helperText={errors.phone || `${phoneNumber.length}/40`} fullWidth />
           </Grid>
 
           <Grid size = {{ xs: 12, sm: 6 }}>

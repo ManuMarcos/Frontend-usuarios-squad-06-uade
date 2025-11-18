@@ -82,10 +82,19 @@ function validate(values: {
   dni: string
 }): Errors {
   const e: Errors = {}
-  if (!values.firstName.trim() || values.firstName.trim().length < 2) e.firstName = 'Ingresá tu nombre.'
-  if (!values.lastName.trim()  || values.lastName.trim().length < 2) e.lastName  = 'Ingresá tu apellido.'
+  const firstLen = values.firstName.trim().length
+  const lastLen = values.lastName.trim().length
+  const phoneLen = values.phoneNumber.trim().length
+  const phonePattern = /^[0-9()+\- ]*$/
+  const phonePatternOk = phonePattern.test(values.phoneNumber)
+  if (firstLen < 2) e.firstName = 'Ingresá tu nombre.'
+  else if (firstLen > 40) e.firstName = 'Máximo 40 caracteres.'
+  if (lastLen < 2) e.lastName  = 'Ingresá tu apellido.'
+  else if (lastLen > 40) e.lastName = 'Máximo 40 caracteres.'
   if (!/^\S+@\S+\.\S+$/.test(values.email)) e.email = 'Email inválido.'
-  if (values.phoneNumber.replace(/\D/g,'').length < 6) e.phoneNumber = 'Teléfono incompleto.'
+  if (!phonePatternOk) e.phoneNumber = 'Solo números, espacios, +, - y ().'
+  else if (phoneLen > 40) e.phoneNumber = 'Máximo 40 caracteres.'
+  else if (values.phoneNumber.replace(/\D/g,'').length < 6) e.phoneNumber = 'Ingresá al menos 6 dígitos.'
   if (!/^\d{7,10}$/.test(values.dni)) e.dni = '7 a 10 dígitos, solo números.'
   return e
 }
@@ -364,7 +373,8 @@ export default function AdminProfile(){
                     label="Nombre"
                     value={firstName}
                     onChange={(e)=>setFirstName(e.target.value)}
-                    error={!!errors.firstName} helperText={errors.firstName || ' '}
+                    inputProps={{ maxLength: 20 }}
+                    error={!!errors.firstName} helperText={errors.firstName || `${firstName.length}/40`}
                     fullWidth
                   />
                 </Grid>
@@ -373,7 +383,8 @@ export default function AdminProfile(){
                     label="Apellido"
                     value={lastName}
                     onChange={(e)=>setLastName(e.target.value)}
-                    error={!!errors.lastName} helperText={errors.lastName || ' '}
+                    inputProps={{ maxLength: 20 }}
+                    error={!!errors.lastName} helperText={errors.lastName || `${lastName.length}/40`}
                     fullWidth
                   />
                 </Grid>
@@ -411,7 +422,8 @@ export default function AdminProfile(){
                     label="Teléfono"
                     value={phoneNumber}
                     onChange={(e)=>setPhone(e.target.value)}
-                    error={!!errors.phoneNumber} helperText={errors.phoneNumber || ' '}
+                    inputProps={{ maxLength: 20 }}
+                    error={!!errors.phoneNumber} helperText={errors.phoneNumber || `${phoneNumber.length}/40`}
                     fullWidth
                   />
                 </Grid>

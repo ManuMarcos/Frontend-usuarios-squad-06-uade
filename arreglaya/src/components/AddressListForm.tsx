@@ -12,7 +12,12 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Chip
+  Chip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormHelperText
 } from '@mui/material'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import AddIcon from '@mui/icons-material/Add'
@@ -27,6 +32,33 @@ type Props = {
   onChange: (next: AddressInfo[]) => void
   disabled?: boolean
 }
+
+const ARG_PROVINCES = [
+  'Buenos Aires',
+  'Ciudad Autónoma de Buenos Aires',
+  'Catamarca',
+  'Chaco',
+  'Chubut',
+  'Córdoba',
+  'Corrientes',
+  'Entre Ríos',
+  'Formosa',
+  'Jujuy',
+  'La Pampa',
+  'La Rioja',
+  'Mendoza',
+  'Misiones',
+  'Neuquén',
+  'Río Negro',
+  'Salta',
+  'San Juan',
+  'San Luis',
+  'Santa Cruz',
+  'Santa Fe',
+  'Santiago del Estero',
+  'Tierra del Fuego',
+  'Tucumán'
+] as const
 
 export default function AddressListForm({ value, onChange, disabled }: Props) {
   const list = value.length ? value : []
@@ -159,16 +191,21 @@ export default function AddressListForm({ value, onChange, disabled }: Props) {
             <AccordionDetails>
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <TextField
-                    label="Provincia/Estado"
-                    value={it.state || ''}
-                    onChange={e=>setAt(i,'state',e.target.value)}
-                    error={!!errors[i].state}
-                    helperText={errors[i].state || ' '}
-                    inputProps={{ maxLength: 55 }}
-                    fullWidth
-                    disabled={disabled}
-                  />
+                  <FormControl fullWidth disabled={disabled} error={!!errors[i].state}>
+                    <InputLabel id={`province-${i}`}>Provincia</InputLabel>
+                    <Select
+                      labelId={`province-${i}`}
+                      label="Provincia"
+                      value={it.state || ''}
+                      onChange={e=>setAt(i,'state',e.target.value)}
+                      MenuProps={{ style: { maxHeight: 320 } }}
+                    >
+                      {ARG_PROVINCES.map(prov => (
+                        <MenuItem key={prov} value={prov}>{prov}</MenuItem>
+                      ))}
+                    </Select>
+                    <FormHelperText>{errors[i].state || ' '}</FormHelperText>
+                  </FormControl>
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>

@@ -45,9 +45,19 @@ export default function Register(){
   const [touched, setTouched] = React.useState({ email:false, password:false, confirm:false })
 
   // Validaciones
+  const firstNameLen = firstName.length
+  const lastNameLen = lastName.length
+  const firstNameTrim = firstName.trim().length
+  const lastNameTrim = lastName.trim().length
+  const firstNameLenOk = firstNameLen <= 40
+  const lastNameLenOk = lastNameLen <= 40
   const emailOk = isValidEmail(email)
   const dniOk   = /^\d{7,10}$/.test(dni)
-  const phoneOk = phone.replace(/\D/g,'').length >= 6
+  const phoneDigits = phone.replace(/\D/g,'').length
+  const phoneLenOk = phone.trim().length <= 40
+  const phonePattern = /^[0-9()+\- ]*$/
+  const phonePatternOk = phonePattern.test(phone)
+  const phoneOk = phonePatternOk && phoneLenOk && phoneDigits >= 6
 
   const pwCrit  = checkPasswordCriteria(password)
   const pwOk    = !!pwCrit.length && pwCrit.upper && pwCrit.lower && pwCrit.number && pwCrit.symbol
@@ -57,8 +67,8 @@ export default function Register(){
   const roleOk = true
 
   const formValid =
-    firstName.trim().length >= 2 &&
-    lastName.trim().length  >= 2 &&
+    firstNameTrim >= 2 && firstNameLenOk &&
+    lastNameTrim  >= 2 && lastNameLenOk &&
     emailOk && dniOk && phoneOk &&
     pwOk && confOk && roleOk
 
@@ -109,12 +119,34 @@ export default function Register(){
           <Stack component="form" spacing={2} onSubmit={onSubmit}>
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField label="Nombre" value={firstName} onChange={(e)=>setFirstName(e.target.value)}
-                  error={firstName.trim().length < 2} helperText={firstName.trim().length < 2 ? 'Ingresá tu nombre.' : ' '} fullWidth />
+                <TextField
+                  label="Nombre"
+                  value={firstName}
+                  onChange={(e)=>setFirstName(e.target.value)}
+                  inputProps={{ maxLength: 20 }}
+                  error={firstNameTrim < 2 || !firstNameLenOk}
+                  helperText={
+                    firstNameTrim < 2 ? 'Ingresá tu nombre.' :
+                    !firstNameLenOk ? 'Máximo 40 caracteres.' :
+                    `${firstNameLen}/40`
+                  }
+                  fullWidth
+                />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField label="Apellido" value={lastName} onChange={(e)=>setLastName(e.target.value)}
-                  error={lastName.trim().length < 2} helperText={lastName.trim().length < 2 ? 'Ingresá tu apellido.' : ' '} fullWidth />
+                <TextField
+                  label="Apellido"
+                  value={lastName}
+                  onChange={(e)=>setLastName(e.target.value)}
+                  inputProps={{ maxLength: 20 }}
+                  error={lastNameTrim < 2 || !lastNameLenOk}
+                  helperText={
+                    lastNameTrim < 2 ? 'Ingresá tu apellido.' :
+                    !lastNameLenOk ? 'Máximo 40 caracteres.' :
+                    `${lastNameLen}/40`
+                  }
+                  fullWidth
+                />
               </Grid>
 
               <Grid size={{ xs: 12, sm: 6 }}>
@@ -132,10 +164,20 @@ export default function Register(){
                   fullWidth />
               </Grid>
               <Grid size={{ xs: 12, sm: 3 }}>
-                <TextField label="Teléfono" value={phone}
+                <TextField
+                  label="Teléfono"
+                  value={phone}
                   onChange={(e)=>setPhone(e.target.value)}
-                  error={!phoneOk} helperText={!phoneOk ? 'Teléfono incompleto.' : ' '}
-                  fullWidth />
+                  inputProps={{ maxLength: 20 }}
+                  error={!phoneOk}
+                  helperText={
+                    !phonePatternOk ? 'Solo números, espacios, +, - y ().' :
+                    !phoneLenOk ? 'Máximo 40 caracteres.' :
+                    !phoneOk ? 'Ingresá al menos 6 dígitos.' :
+                    `${phone.length}/40`
+                  }
+                  fullWidth
+                />
               </Grid>
 
               <Grid size={{ xs: 12, sm: 6 }}>

@@ -121,7 +121,6 @@ export async function resetPasswordWithToken(token: string, newPassword: string)
 
 export async function changePassword(payload: { email: string; oldPassword: string; newPassword: string }) {
   const token = localStorage.getItem('auth.token')
-  console.log('changePassword', token)
   const { data } = await api.patch('/api/users/change-password', payload, {
     headers: {
       'Content-Type': 'application/json',

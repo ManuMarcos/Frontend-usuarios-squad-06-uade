@@ -176,11 +176,19 @@ export default function CustomerProfile() {
   // Validaciones básicas
   const emailOk = isValidEmail(email)
   const dniOk = /^\d{7,10}$/.test(dni)
-  const phoneOk = phoneNumber.replace(/\D/g, '').length >= 6
+  const firstNameLen = firstName.trim().length
+  const lastNameLen = lastName.trim().length
+  const firstNameLenOk = firstNameLen <= 40
+  const lastNameLenOk = lastNameLen <= 40
+  const phoneDigits = phoneNumber.replace(/\D/g, '').length
+  const phoneLenOk = phoneNumber.trim().length <= 40
+  const phonePattern = /^[0-9()+\- ]*$/
+  const phonePatternOk = phonePattern.test(phoneNumber)
+  const phoneOk = phoneDigits >= 6 && phoneLenOk && phonePatternOk
 
   const isValid =
-    firstName.trim().length >= 2 &&
-    lastName.trim().length >= 2 &&
+    firstNameLen >= 2 && firstNameLenOk &&
+    lastNameLen >= 2 && lastNameLenOk &&
     emailOk &&
     dniOk &&
     phoneOk
@@ -467,8 +475,13 @@ export default function CustomerProfile() {
                     label="Nombre"
                     value={firstName}
                     onChange={e => setFirstName(e.target.value)}
-                    error={firstName.trim().length < 2}
-                    helperText={firstName.trim().length < 2 ? 'Ingresá tu nombre.' : ' '}
+                    inputProps={{ maxLength: 20 }}
+                    error={firstNameLen < 2 || !firstNameLenOk}
+                    helperText={
+                      !firstNameLenOk ? 'Máximo 40 caracteres.' :
+                      firstNameLen < 2 ? 'Ingresá tu nombre.' :
+                      `${firstName.length}/40`
+                    }
                     fullWidth
                   />
                 </Grid>
@@ -477,8 +490,13 @@ export default function CustomerProfile() {
                     label="Apellido"
                     value={lastName}
                     onChange={e => setLastName(e.target.value)}
-                    error={lastName.trim().length < 2}
-                    helperText={lastName.trim().length < 2 ? 'Ingresá tu apellido.' : ' '}
+                    inputProps={{ maxLength: 20 }}
+                    error={lastNameLen < 2 || !lastNameLenOk}
+                    helperText={
+                      !lastNameLenOk ? 'Máximo 40 caracteres.' :
+                      lastNameLen < 2 ? 'Ingresá tu apellido.' :
+                      `${lastName.length}/40`
+                    }
                     fullWidth
                   />
                 </Grid>
@@ -521,8 +539,13 @@ export default function CustomerProfile() {
                     label="Teléfono"
                     value={phoneNumber}
                     onChange={e => setPhone(e.target.value)}
+                    inputProps={{ maxLength: 20 }}
                     error={!phoneOk}
-                    helperText={!phoneOk ? 'Teléfono incompleto.' : ' '}
+                    helperText={
+                      !phonePatternOk ? 'Solo números, espacios, +, - y ().' :
+                      !phoneLenOk ? 'Máximo 40 caracteres.' :
+                      !phoneOk ? 'Ingresá al menos 6 dígitos.' : `${phoneNumber.length}/40`
+                    }
                     fullWidth
                   />
                 </Grid>
