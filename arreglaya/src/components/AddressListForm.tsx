@@ -238,7 +238,8 @@ export default function AddressListForm({ value, onChange, disabled }: Props) {
                   <TextField
                     label="Número"
                     value={it.number || ''}
-                    onChange={e=>setAt(i,'number',e.target.value)}
+                    inputMode="numeric"
+                    onChange={e=>setAt(i,'number', e.target.value.replace(/\D/g, ''))}
                     error={!!errors[i].number}
                     helperText={errors[i].number || ' '}
                     inputProps={{ maxLength: 10 }}

@@ -1,11 +1,12 @@
 import React from 'react'
 import {
-  Paper, Grid, Stack, Typography, TextField, Button, Alert,
+  Paper, Grid, Stack, Typography, TextField, Button,
   FormControl, InputLabel, Select, MenuItem
 } from '@mui/material'
 import { useNavigate, Link as RouterLink } from 'react-router-dom'
 import { registerUser, type RegisterDTO } from '../api/auth'
 import { isValidEmail, checkPasswordCriteria } from '../utils/validators'
+import { useNotify } from '../context/Notifications'
 import PasswordField from '../components/PasswordField'
 import PasswordStrengthBar from '../components/PasswordStrengthBar'
 import AddressListForm from '../components/AddressListForm'
@@ -39,9 +40,8 @@ export default function Register(){
 
 
   // UX
+  const notify = useNotify()
   const [loading, setLoading] = React.useState(false)
-  const [error, setError]     = React.useState<string | null>(null)
-  const [success, setSuccess] = React.useState<string | null>(null)
   const [touched, setTouched] = React.useState({ email:false, password:false, confirm:false })
 
   // Validaciones
@@ -49,12 +49,15 @@ export default function Register(){
   const lastNameLen = lastName.length
   const firstNameTrim = firstName.trim().length
   const lastNameTrim = lastName.trim().length
+  const namePattern = /^[a-zA-ZÁÉÍÓÚáéíóúÑñÜü\s]*$/
+  const firstNamePatternOk = namePattern.test(firstName)
+  const lastNamePatternOk = namePattern.test(lastName)
   const firstNameLenOk = firstNameLen <= 40
   const lastNameLenOk = lastNameLen <= 40
   const emailOk = isValidEmail(email)
   const dniOk   = /^\d{7,10}$/.test(dni)
   const phoneDigits = phone.replace(/\D/g,'').length
-  const phoneLenOk = phone.trim().length <= 40
+  const phoneLenOk = phone.trim().length <= 20
   const phonePattern = /^[0-9()+\- ]*$/
   const phonePatternOk = phonePattern.test(phone)
   const phoneOk = phonePatternOk && phoneLenOk && phoneDigits >= 6
@@ -67,26 +70,30 @@ export default function Register(){
   const roleOk = true
 
   const formValid =
-    firstNameTrim >= 2 && firstNameLenOk &&
-    lastNameTrim  >= 2 && lastNameLenOk &&
+    firstNameTrim >= 2 && firstNameLenOk && firstNamePatternOk &&
+    lastNameTrim  >= 2 && lastNameLenOk && lastNamePatternOk &&
     emailOk && dniOk && phoneOk &&
     pwOk && confOk && roleOk
 
   function parseError(err:any): string {
     const status = err?.response?.status
-    const msg = err?.response?.data?.message || err?.response?.data || err?.message
-    if (status === 409 && /email/i.test(String(msg))) return 'Ese email ya está registrado.'
-    if (status === 400) return 'Revisá los datos ingresados.'
+    const serverMsg = err?.response?.data?.message || err?.response?.data
+    if (typeof serverMsg === 'string' && serverMsg.trim().length) return serverMsg
     if (!err?.response) return 'No se pudo conectar con el servidor.'
-    return msg || 'Error al registrar.'
+    if (status === 409 && /email/i.test(String(err?.message ?? ''))) return 'Ese email ya está registrado.'
+    if (status === 400) return 'Revisá los datos ingresados.'
+    return err?.message || 'Error al registrar.'
   }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setTouched({ email:true, password:true, confirm:true })
-    if (!formValid) { setError('Revisá los campos marcados.'); return }
+    if (!formValid) {
+      notify({ severity: 'error', message: 'Revisá los campos marcados.' })
+      return
+    }
 
-    setLoading(true); setError(null); setSuccess(null)
+    setLoading(true)
     try {
       const payload: RegisterDTO = {
         email,
@@ -99,10 +106,10 @@ export default function Register(){
         address: (addresses || []).filter(a => !isEmptyAddress(a)),
       }
       await registerUser(payload)
-      setSuccess('¡Cuenta creada! Iniciá sesión para continuar.')
+      notify({ severity: 'success', message: '¡Cuenta creada! Iniciá sesión para continuar.' })
       setTimeout(() => navigate('/login?m=registered', { replace: true }), 900)
     } catch (err:any) {
-      setError(parseError(err))
+      notify({ severity: 'error', message: parseError(err) })
     } finally {
       setLoading(false)
     }
@@ -113,19 +120,17 @@ export default function Register(){
         <Paper sx={{ p:3 }}>
           <Typography variant="h5" fontWeight={700} mb={2}>Crear cuenta</Typography>
 
-          {error && <Alert severity="error" sx={{ mb:2 }}>{error}</Alert>}
-          {success && <Alert severity="success" sx={{ mb:2 }}>{success}</Alert>}
-
           <Stack component="form" spacing={2} onSubmit={onSubmit}>
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   label="Nombre"
                   value={firstName}
-                  onChange={(e)=>setFirstName(e.target.value)}
-                  inputProps={{ maxLength: 20 }}
-                  error={firstNameTrim < 2 || !firstNameLenOk}
+                  onChange={(e)=>setFirstName(e.target.value.replace(/[^a-zA-ZÁÉÍÓÚáéíóúÑñÜü\s]/g,''))}
+                  inputProps={{ maxLength: 40 }}
+                  error={firstNameTrim < 2 || !firstNameLenOk || !firstNamePatternOk}
                   helperText={
+                    !firstNamePatternOk ? 'Solo letras.' :
                     firstNameTrim < 2 ? 'Ingresá tu nombre.' :
                     !firstNameLenOk ? 'Máximo 40 caracteres.' :
                     `${firstNameLen}/40`
@@ -137,10 +142,11 @@ export default function Register(){
                 <TextField
                   label="Apellido"
                   value={lastName}
-                  onChange={(e)=>setLastName(e.target.value)}
-                  inputProps={{ maxLength: 20 }}
-                  error={lastNameTrim < 2 || !lastNameLenOk}
+                  onChange={(e)=>setLastName(e.target.value.replace(/[^a-zA-ZÁÉÍÓÚáéíóúÑñÜü\s]/g,''))}
+                  inputProps={{ maxLength: 40 }}
+                  error={lastNameTrim < 2 || !lastNameLenOk || !lastNamePatternOk}
                   helperText={
+                    !lastNamePatternOk ? 'Solo letras.' :
                     lastNameTrim < 2 ? 'Ingresá tu apellido.' :
                     !lastNameLenOk ? 'Máximo 40 caracteres.' :
                     `${lastNameLen}/40`
@@ -172,9 +178,9 @@ export default function Register(){
                   error={!phoneOk}
                   helperText={
                     !phonePatternOk ? 'Solo números, espacios, +, - y ().' :
-                    !phoneLenOk ? 'Máximo 40 caracteres.' :
+                    !phoneLenOk ? 'Máximo 20 caracteres.' :
                     !phoneOk ? 'Ingresá al menos 6 dígitos.' :
-                    `${phone.length}/40`
+                    `${phone.length}/20`
                   }
                   fullWidth
                 />
@@ -230,6 +236,7 @@ export default function Register(){
               ¿Ya tenés cuenta? <RouterLink to="/login">Iniciar sesión</RouterLink>
             </Typography>
           </Stack>
+
         </Paper>
 
     </Grid>

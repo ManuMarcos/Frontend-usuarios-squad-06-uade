@@ -2,7 +2,7 @@ import React from 'react'
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Grid, TextField, Button, FormControl, InputLabel, Select, MenuItem,
-  Alert, Stack, Typography
+  Stack, Typography
 } from '@mui/material'
 // barrio/profession lists removed from constants
 import { adminCreateUser, type ApiUser } from '../../api/users'
@@ -13,6 +13,7 @@ import { AddressInfo } from '../../types/address'
 import { EMPTY_ADDR, isEmptyAddress, validateAddress } from '../../utils/address'
 import AddressListForm from '../AddressListForm'
 import { ApiRole } from '../../types'
+import { useNotify } from '../../context/Notifications'
 
 type Props = {
   open: boolean
@@ -22,6 +23,7 @@ type Props = {
 }
 
 export default function AdminCreateUserDialog({ open, onClose, onCreated }: Props){
+  const notify = useNotify()
   // Campos
   const [firstName, setFirstName]   = React.useState('')
   const [lastName, setLastName]     = React.useState('')
@@ -37,12 +39,11 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
 
  
 
-  // validación de addresses: al menos uno válido
-  const validList = addresses.filter(a => Object.keys(validateAddress(a, true)).length === 0)
-  const addressesOk = validList.length >= 1
+  // validación de addresses: opcionales, pero si se completan deben ser válidos
+  const filledAddresses = addresses.filter(a => !isEmptyAddress(a))
+  const addressesOk = filledAddresses.every(a => Object.keys(validateAddress(a, true)).length === 0)
 
   const [loading, setLoading] = React.useState(false)
-  const [error, setError]     = React.useState<string | null>(null)
 
   React.useEffect(() => {
     if (open) {
@@ -51,7 +52,7 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
       setDni(''); setPhone('')
   setRole('CLIENTE');
       setAddresses([{ ...EMPTY_ADDR }])
-      setLoading(false); setError(null)
+      setLoading(false)
     }
   }, [open])
 
@@ -60,21 +61,24 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
   const pwOk = criteria.length && criteria.upper && criteria.lower && criteria.number && criteria.symbol
   const confirmOk = password === confirm
 
+  const namePattern = /^[a-zA-ZÁÉÍÓÚáéíóúÑñÜü\s]*$/
+  const firstNamePatternOk = namePattern.test(firstName)
+  const lastNamePatternOk = namePattern.test(lastName)
   const phoneDigits = phoneNumber.replace(/\D/g,'').length
   const phonePattern = /^[0-9()+\- ]*$/
   const phonePatternOk = phonePattern.test(phoneNumber)
-  const phoneLenOk = phoneNumber.trim().length <= 40
+  const phoneLenOk = phoneNumber.trim().length <= 20
   const phoneMsg = !phonePatternOk
     ? 'Solo números, espacios, +, - y ().'
     : !phoneLenOk
-    ? 'Máximo 40 caracteres.'
+    ? 'Máximo 20 caracteres.'
     : phoneDigits < 6
     ? 'Ingresá al menos 6 dígitos.'
     : ''
 
   const errors = {
-    firstName: firstName.trim().length < 2 ? 'Ingresá el nombre.' : '',
-    lastName:  lastName.trim().length  < 2 ? 'Ingresá el apellido.' : '',
+    firstName: firstName.trim().length < 2 ? 'Ingresá el nombre.' : !firstNamePatternOk ? 'Solo letras.' : firstName.length > 40 ? 'Máximo 40 caracteres.' : '',
+    lastName:  lastName.trim().length  < 2 ? 'Ingresá el apellido.' : !lastNamePatternOk ? 'Solo letras.' : lastName.length > 40 ? 'Máximo 40 caracteres.' : '',
     email:     !isValidEmail(email) ? 'Email inválido.' : '',
     password:  !pwOk ? 'Usá 8+ caráct., mayús, minús, número y símbolo.' : '',
     confirm:   !confirmOk ? 'No coincide.' : '',
@@ -90,8 +94,7 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
     addressesOk
 
   async function handleCreate(){
-    setError(null)
-    if (!isValid) { setError('Revisá los campos marcados.'); return }
+    if (!isValid) { notify({ severity: 'error', message: 'Revisá los campos marcados.' }); return }
     setLoading(true)
     try{
       const payload = {
@@ -101,10 +104,11 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
       }
       const user = await adminCreateUser(payload)
       onCreated?.(user)
+      notify({ severity: 'success', message: 'Usuario creado correctamente.' })
       onClose()
     }catch(e:any){
       const msg = e?.response?.data?.message || e?.response?.data || e?.message || 'No se pudo crear el usuario'
-      setError(msg)
+      notify({ severity: 'error', message: msg })
     }finally{
       setLoading(false)
     }
@@ -114,18 +118,17 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
     <Dialog open={open} onClose={loading ? undefined : onClose} fullWidth maxWidth="md">
       <DialogTitle>Crear usuario</DialogTitle>
       <DialogContent dividers>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         <Grid container spacing={2}>
           <Grid size = {{ xs: 12, sm: 6 }}>
             <TextField label="Nombre" value={firstName}
-              onChange={(e)=>setFirstName(e.target.value)}
-              inputProps={{ maxLength: 20 }}
+              onChange={(e)=>setFirstName(e.target.value.replace(/[^a-zA-ZÁÉÍÓÚáéíóúÑñÜü\s]/g,''))}
+              inputProps={{ maxLength: 40 }}
               error={!!errors.firstName} helperText={errors.firstName || `${firstName.length}/40`} fullWidth />
           </Grid>
           <Grid size = {{ xs: 12, sm: 6 }}>
             <TextField label="Apellido" value={lastName}
-              onChange={(e)=>setLastName(e.target.value)}
-              inputProps={{ maxLength: 20 }}
+              onChange={(e)=>setLastName(e.target.value.replace(/[^a-zA-ZÁÉÍÓÚáéíóúÑñÜü\s]/g,''))}
+              inputProps={{ maxLength: 40 }}
               error={!!errors.lastName} helperText={errors.lastName || `${lastName.length}/40`} fullWidth />
           </Grid>
 
@@ -143,7 +146,7 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
             <TextField label="Teléfono" value={phoneNumber}
               onChange={(e)=>setPhone(e.target.value)}
               inputProps={{ maxLength: 20 }}
-              error={!!errors.phone} helperText={errors.phone || `${phoneNumber.length}/40`} fullWidth />
+              error={!!errors.phone} helperText={errors.phone || `${phoneNumber.length}/20`} fullWidth />
           </Grid>
 
           <Grid size = {{ xs: 12, sm: 6 }}>

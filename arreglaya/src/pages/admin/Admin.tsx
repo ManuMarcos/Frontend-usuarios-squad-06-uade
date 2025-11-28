@@ -1,6 +1,6 @@
 import React from 'react'
 import {
-  Paper, Stack, Typography, TextField, IconButton, Tooltip, Snackbar, Alert,
+  Paper, Stack, Typography, TextField, IconButton, Tooltip,
   Dialog, DialogTitle, DialogContent, DialogActions, Button, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow, Chip, InputAdornment, Box
 } from '@mui/material'
@@ -14,6 +14,7 @@ import { apiRoleToUiRole } from '../../types'
 import AdminCreateUserDialog from '../../components/admin/AdminCreateUserDialog'
 import DeactivateUserButton from '../../components/admin/DeactivateUserButton'
 import UserStatusChip from '../../components/admin/UserStatusChip'
+import { useNotify } from '../../context/Notifications'
 
 type UiUser = { userId: number; name: string; email: string; role: UiRole; isActive?: boolean }
 
@@ -41,16 +42,12 @@ function toUiUser(u: UserDTO): UiUser {
 }
 
 export default function Admin() {
+  const notify = useNotify()
   const [rows, setRows] = React.useState<UiUser[]>([])
   const [sortAsc, setSortAsc] = React.useState(true)
   const [loading, setLoading] = React.useState(false)
   const [openCreate, setOpenCreate] = React.useState(false)
   const [searchTerm, setSearchTerm] = React.useState('')
-
-
-  const [snack, setSnack] = React.useState<{ open: boolean; msg: string; type: 'success' | 'error' | 'info' }>({
-    open: false, msg: '', type: 'success'
-  })
 
   // La creación de usuarios ahora se maneja completamente a través del diálogo AdminCreateUserDialog
 
@@ -67,7 +64,7 @@ export default function Admin() {
           if (!alive) return
           setRows(sortRows(users.map(toUiUser)))
         } catch (e: any) {
-          setSnack({ open: true, msg: e?.response?.data || e?.message || 'No se pudo obtener usuarios', type: 'error' })
+          notify({ severity: 'error', message: e?.response?.data || e?.message || 'No se pudo obtener usuarios' })
         }
       })()
     return () => { alive = false }
@@ -186,9 +183,6 @@ export default function Admin() {
         onCreated={() => { setOpenCreate(false); handleCreated() }}
       />
 
-      <Snackbar open={snack.open} autoHideDuration={3000} onClose={() => setSnack(s => ({ ...s, open: false }))}>
-        <Alert severity={snack.type} onClose={() => setSnack(s => ({ ...s, open: false }))}>{snack.msg}</Alert>
-      </Snackbar>
     </Paper>
   )
 }

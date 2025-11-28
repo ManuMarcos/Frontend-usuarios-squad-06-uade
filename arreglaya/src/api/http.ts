@@ -36,7 +36,9 @@ api.interceptors.response.use(
     const url = error?.config?.url || ''
     const skipAuthRedirect =
       url.includes('/api/users/change-password') ||
-      url.includes('/api/users/register')
+      url.includes('/api/users/register') ||
+      url.includes('api/users/register') ||
+      url.includes('/api/users/reset-password')
     if (skipAuthRedirect && (status === 401 || status === 403)) {
       return Promise.reject(error)
     }

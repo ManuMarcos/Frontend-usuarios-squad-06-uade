@@ -5,8 +5,6 @@ import {
   Typography,
   TextField,
   Button,
-  Snackbar,
-  Alert,
   CircularProgress,
   Box,
   Chip,
@@ -33,6 +31,7 @@ import { getUserById, updateUserPartial, type ApiUser } from '../../api/users'
 import { useNavigate } from 'react-router-dom'
 import AvatarEditor from '../../components/AvatarEditor'
 import ChangePasswordForm from '../../components/ChangePasswordForm'
+import { useNotify } from '../../context/Notifications'
 
 type InfoItem = { label: string; value: React.ReactNode }
 
@@ -84,16 +83,21 @@ function validate(values: {
   const e: Errors = {}
   const firstLen = values.firstName.trim().length
   const lastLen = values.lastName.trim().length
+  const namePattern = /^[a-zA-ZÁÉÍÓÚáéíóúÑñÜü\s]*$/
+  const firstNamePatternOk = namePattern.test(values.firstName)
+  const lastNamePatternOk = namePattern.test(values.lastName)
   const phoneLen = values.phoneNumber.trim().length
   const phonePattern = /^[0-9()+\- ]*$/
   const phonePatternOk = phonePattern.test(values.phoneNumber)
   if (firstLen < 2) e.firstName = 'Ingresá tu nombre.'
+  else if (!firstNamePatternOk) e.firstName = 'Solo letras.'
   else if (firstLen > 40) e.firstName = 'Máximo 40 caracteres.'
   if (lastLen < 2) e.lastName  = 'Ingresá tu apellido.'
+  else if (!lastNamePatternOk) e.lastName = 'Solo letras.'
   else if (lastLen > 40) e.lastName = 'Máximo 40 caracteres.'
   if (!/^\S+@\S+\.\S+$/.test(values.email)) e.email = 'Email inválido.'
   if (!phonePatternOk) e.phoneNumber = 'Solo números, espacios, +, - y ().'
-  else if (phoneLen > 40) e.phoneNumber = 'Máximo 40 caracteres.'
+  else if (phoneLen > 20) e.phoneNumber = 'Máximo 20 caracteres.'
   else if (values.phoneNumber.replace(/\D/g,'').length < 6) e.phoneNumber = 'Ingresá al menos 6 dígitos.'
   if (!/^\d{7,10}$/.test(values.dni)) e.dni = '7 a 10 dígitos, solo números.'
   return e
@@ -103,11 +107,10 @@ export default function AdminProfile(){
   const { user, logout, mergeUserMeta } = useAuth()
   const navigate = useNavigate()
 
+  const notify = useNotify()
   const [loading, setLoading] = React.useState(true)
   const [edit, setEdit]       = React.useState(false)
   const [saving, setSaving]   = React.useState(false)
-  const [toast, setToast]     = React.useState<{open:boolean; msg:string; sev:'success'|'error'}>({open:false, msg:'', sev:'success'})
-
   const [firstName, setFirstName] = React.useState('')
   const [lastName, setLastName]   = React.useState('')
   const [email, setEmail]         = React.useState(user?.email ?? '')
@@ -151,7 +154,7 @@ export default function AdminProfile(){
 
         mergeUserMeta(data)
       } catch (err:any) {
-        setToast({open:true, msg: err?.response?.data || err?.message || 'No se pudo cargar el usuario', sev:'error'})
+        notify({ severity: 'error', message: err?.response?.data || err?.message || 'No se pudo cargar el usuario' })
       } finally {
         setLoading(false)
       }
@@ -198,9 +201,9 @@ export default function AdminProfile(){
   }
 
   async function save(){
-    if(!user?.id){ setToast({open:true, msg:'No se encontró ID de usuario.', sev:'error'}); return }
+    if(!user?.id){ notify({ severity: 'error', message:'No se encontró ID de usuario.' }); return }
     const errs = validate(values)
-    if (Object.keys(errs).length) { setToast({open:true, msg:'Revisá los campos señalados.', sev:'error'}); return }
+    if (Object.keys(errs).length) { notify({ severity: 'error', message:'Revisá los campos señalados.' }); return }
 
     setSaving(true)
     try {
@@ -219,10 +222,10 @@ export default function AdminProfile(){
       original.current = { ...(original.current || {}), ...patch } as ApiUser
       mergeUserMeta(patch)
 
-      setToast({open:true, msg: msg || 'Datos guardados', sev:'success'})
+      notify({ severity: 'success', message: msg || 'Datos guardados' })
       setEdit(false)
     } catch (e:any) {
-      setToast({open:true, msg: e?.response?.data || e?.message || 'No se pudo guardar', sev:'error'})
+      notify({ severity: 'error', message: e?.response?.data || e?.message || 'No se pudo guardar' })
     } finally {
       setSaving(false)
     }
@@ -372,8 +375,8 @@ export default function AdminProfile(){
                   <TextField
                     label="Nombre"
                     value={firstName}
-                    onChange={(e)=>setFirstName(e.target.value)}
-                    inputProps={{ maxLength: 20 }}
+                    onChange={(e)=>setFirstName(e.target.value.replace(/[^a-zA-ZÁÉÍÓÚáéíóúÑñÜü\s]/g,''))}
+                    inputProps={{ maxLength: 40 }}
                     error={!!errors.firstName} helperText={errors.firstName || `${firstName.length}/40`}
                     fullWidth
                   />
@@ -382,8 +385,8 @@ export default function AdminProfile(){
                   <TextField
                     label="Apellido"
                     value={lastName}
-                    onChange={(e)=>setLastName(e.target.value)}
-                    inputProps={{ maxLength: 20 }}
+                    onChange={(e)=>setLastName(e.target.value.replace(/[^a-zA-ZÁÉÍÓÚáéíóúÑñÜü\s]/g,''))}
+                    inputProps={{ maxLength: 40 }}
                     error={!!errors.lastName} helperText={errors.lastName || `${lastName.length}/40`}
                     fullWidth
                   />
@@ -423,7 +426,7 @@ export default function AdminProfile(){
                     value={phoneNumber}
                     onChange={(e)=>setPhone(e.target.value)}
                     inputProps={{ maxLength: 20 }}
-                    error={!!errors.phoneNumber} helperText={errors.phoneNumber || `${phoneNumber.length}/40`}
+                    error={!!errors.phoneNumber} helperText={errors.phoneNumber || `${phoneNumber.length}/20`}
                     fullWidth
                   />
                 </Grid>
@@ -458,17 +461,13 @@ export default function AdminProfile(){
         )}
       </Stack>
 
-      <Snackbar open={toast.open} autoHideDuration={3000} onClose={()=>setToast(s=>({...s, open:false}))}>
-        <Alert severity={toast.sev} onClose={()=>setToast(s=>({...s, open:false}))}>{toast.msg}</Alert>
-      </Snackbar>
-
       <Dialog open={changePassOpen} onClose={() => setChangePassOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>Cambiar contraseña</DialogTitle>
         <DialogContent dividers>
           <ChangePasswordForm
             defaultEmail={email}
             onResult={(sev, msg) => {
-              setToast({ open: true, msg, sev })
+              notify({ severity: sev, message: msg })
               if (sev === 'success') setChangePassOpen(false)
             }}
           />

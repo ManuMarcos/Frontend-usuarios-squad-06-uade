@@ -12,6 +12,7 @@ import {
 } from '@mui/material'
 import { Link as RouterLink, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { resetPasswordWithToken } from '../api/users'
+import { useNotify } from '../context/Notifications'
 
 export default function ResetPassword() {
   const { token: tokenParam } = useParams<{ token?: string }>()
@@ -19,11 +20,10 @@ export default function ResetPassword() {
   const navigate = useNavigate()
   const token = tokenParam || searchParams.get('token') || ''
 
+  const notify = useNotify()
   const [newPassword, setNewPassword] = React.useState('')
   const [confirmPassword, setConfirmPassword] = React.useState('')
   const [loading, setLoading] = React.useState(false)
-  const [message, setMessage] = React.useState<string | null>(null)
-  const [error, setError] = React.useState<string | null>(null)
 
   const passTooShort = newPassword.length > 0 && newPassword.length < 6
   const mismatch = confirmPassword.length > 0 && confirmPassword !== newPassword
@@ -32,29 +32,27 @@ export default function ResetPassword() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setError(null)
-    setMessage(null)
 
     if (tokenMissing) {
-      setError('El enlace es inválido o expiró.')
+      notify({ severity: 'error', message: 'El enlace es inválido o expiró.' })
       return
     }
     if (passTooShort) {
-      setError('La contraseña debe tener al menos 6 caracteres.')
+      notify({ severity: 'error', message: 'La contraseña debe tener al menos 6 caracteres.' })
       return
     }
     if (mismatch) {
-      setError('Las contraseñas no coinciden.')
+      notify({ severity: 'error', message: 'Las contraseñas no coinciden.' })
       return
     }
 
     setLoading(true)
     try {
       await resetPasswordWithToken(token, newPassword)
-      setMessage('¡Tu contraseña fue actualizada! Ahora te redirigiremos para iniciar sesión.')
+      notify({ severity: 'success', message: '¡Tu contraseña fue actualizada!' })
       setTimeout(() => navigate('/login?m=reset'), 1000)
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'No pudimos restablecer tu contraseña. Intentalo nuevamente.')
+      notify({ severity: 'error', message: err?.response?.data?.message || 'No pudimos restablecer tu contraseña. Intentalo nuevamente.' })
     } finally {
       setLoading(false)
     }
@@ -110,17 +108,6 @@ export default function ResetPassword() {
               backgroundColor: '#fff',
             }}
           >
-            {message && (
-              <Alert severity="success" sx={{ mb: 2 }}>
-                {message}
-              </Alert>
-            )}
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
-
             {tokenMissing && (
               <Alert severity="warning" sx={{ mb: 2 }}>
                 El enlace para restablecer la contraseña no es válido. Solicitá uno nuevo.

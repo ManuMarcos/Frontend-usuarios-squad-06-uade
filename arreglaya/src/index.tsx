@@ -23,6 +23,7 @@ import Privacy from './pages/Privacy'
 import Profile from './pages/profile/Profile'
 import Logout from './pages/Logout'
 import GuestRoute from './auth/GuestRoute'
+import { NotificationsProvider } from './context/Notifications'
 
 const router = createBrowserRouter([
   {
@@ -56,9 +57,11 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AuthProvider>
-        <RouterProvider router={router} />
-      </AuthProvider>
+      <NotificationsProvider>
+        <AuthProvider>
+          <RouterProvider router={router} />
+        </AuthProvider>
+      </NotificationsProvider>
     </ThemeProvider>
   </React.StrictMode>
 )

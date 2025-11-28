@@ -6,7 +6,6 @@ import {
   Typography,
   TextField,
   Button,
-  Alert,
   Divider,
   Paper,
   Grid,
@@ -14,12 +13,12 @@ import {
 import { Link as RouterLink } from 'react-router-dom'
 import { requestPasswordReset } from '../api/users'
 import { isValidEmail } from '../utils/validators'
+import { useNotify } from '../context/Notifications'
 
 export default function ForgotPassword() {
   const [email, setEmail] = React.useState('')
   const [loading, setLoading] = React.useState(false)
-  const [message, setMessage] = React.useState<string | null>(null)
-  const [error, setError] = React.useState<string | null>(null)
+  const notify = useNotify()
 
   const emailTouched = email.length > 0
   const emailInvalid = emailTouched && !isValidEmail(email)
@@ -27,19 +26,21 @@ export default function ForgotPassword() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setError(null); setMessage(null)
 
     if (!isValidEmail(email)) {
-      setError('Ingresá un email válido')
+      notify({ severity: 'error', message: 'Ingresá un email válido' })
       return
     }
 
     setLoading(true)
     try {
       await requestPasswordReset(email)
-      setMessage('Si el email está registrado, te enviamos un enlace para restablecer tu contraseña.')
+      notify({
+        severity: 'success',
+        message: 'Si el email está registrado, te enviamos un enlace para restablecer tu contraseña.',
+      })
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'No pudimos procesar tu solicitud')
+      notify({ severity: 'error', message: err?.response?.data?.message || 'No pudimos procesar tu solicitud' })
     } finally {
       setLoading(false)
     }
@@ -85,9 +86,6 @@ export default function ForgotPassword() {
               backgroundColor: '#fff',
             }}
           >
-            {message && <Alert severity="success" sx={{ mb: 2 }}>{message}</Alert>}
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-
             {/* Título sutil para jerarquía visual */}
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
               Recuperar acceso

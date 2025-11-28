@@ -7,8 +7,6 @@ import {
   Chip,
   TextField,
   Button,
-  Snackbar,
-  Alert,
   CircularProgress,
   Divider,
   Box,
@@ -29,6 +27,7 @@ import { getUserById, updateUserPartial, type ApiUser } from '../../api/users'
 import AddressListForm from '../../components/AddressListForm'
 import AvatarEditor from '../../components/AvatarEditor'
 import ChangePasswordForm from '../../components/ChangePasswordForm'
+import { useNotify } from '../../context/Notifications'
 import type { AddressInfo } from '../../types/address'
 import {
   EMPTY_ADDR,
@@ -84,13 +83,11 @@ function InfoCard({ title, icon, items }: { title: string; icon: React.ReactNode
 export default function ContractorProfile() {
   const { user, logout, mergeUserMeta } = useAuth()
   const navigate = useNavigate()
+  const notify = useNotify()
 
   const [loading, setLoading] = React.useState(true)
   const [edit, setEdit] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
-  const [toast, setToast] = React.useState<{ open: boolean; msg: string; sev: 'success' | 'error' }>({
-    open: false, msg: '', sev: 'success'
-  })
 
   // Datos básicos
   const [firstName, setFirstName] = React.useState('')
@@ -144,11 +141,7 @@ export default function ContractorProfile() {
         // sync sesión
         mergeUserMeta(data)
       } catch (err: any) {
-        setToast({
-          open: true,
-          msg: err?.response?.data || err?.message || 'No se pudo cargar el usuario',
-          sev: 'error'
-        })
+        notify({ severity: 'error', message: err?.response?.data || err?.message || 'No se pudo cargar el usuario' })
       } finally {
         setLoading(false)
       }
@@ -163,15 +156,18 @@ export default function ContractorProfile() {
   const firstNameLen = firstName.trim().length
   const lastNameLen = lastName.trim().length
   const phoneDigits = phoneNumber.replace(/\D/g, '').length
-  const phoneLenOk = phoneNumber.trim().length <= 40
+  const phoneLenOk = phoneNumber.trim().length <= 20
+  const namePattern = /^[a-zA-ZÁÉÍÓÚáéíóúÑñÜü\s]*$/
+  const firstNamePatternOk = namePattern.test(firstName)
+  const lastNamePatternOk = namePattern.test(lastName)
   const firstNameLenOk = firstNameLen <= 40
   const lastNameLenOk = lastNameLen <= 40
   const phonePattern = /^[0-9()+\- ]*$/
   const phonePatternOk = phonePattern.test(phoneNumber)
   const phoneOk = phoneDigits >= 6 && phoneLenOk && phonePatternOk
   const isValid =
-    firstNameLen >= 2 && firstNameLenOk &&
-    lastNameLen  >= 2 && lastNameLenOk &&
+    firstNameLen >= 2 && firstNameLenOk && firstNamePatternOk &&
+    lastNameLen  >= 2 && lastNameLenOk && lastNamePatternOk &&
     emailOk && dniOk && phoneOk
 
   function isDirty(): boolean {
@@ -213,11 +209,11 @@ export default function ContractorProfile() {
 
   async function save() {
     if (!user?.id) {
-      setToast({ open: true, msg: 'No se encontró ID de usuario.', sev: 'error' })
+      notify({ severity: 'error', message: 'No se encontró ID de usuario.' })
       return
     }
     if (!isValid) {
-      setToast({ open: true, msg: 'Revisá los campos marcados.', sev: 'error' })
+      notify({ severity: 'error', message: 'Revisá los campos marcados.' })
       return
     }
     setSaving(true)
@@ -240,10 +236,10 @@ export default function ContractorProfile() {
       original.current = { ...(original.current || {}), ...patch }
       mergeUserMeta(patch)
 
-      setToast({ open: true, msg: msg || 'Datos guardados', sev: 'success' })
+      notify({ severity: 'success', message: msg || 'Datos guardados' })
       setEdit(false)
     } catch (e: any) {
-      setToast({ open: true, msg: e?.response?.data || e?.message || 'No se pudo guardar', sev: 'error' })
+      notify({ severity: 'error', message: e?.response?.data || e?.message || 'No se pudo guardar' })
     } finally {
       setSaving(false)
     }
@@ -459,10 +455,11 @@ export default function ContractorProfile() {
                   <TextField
                     label="Nombre"
                     value={firstName}
-                    onChange={e => setFirstName(e.target.value)}
-                    inputProps={{ maxLength: 20 }}
-                    error={firstNameLen < 2 || !firstNameLenOk}
+                    onChange={e => setFirstName(e.target.value.replace(/[^a-zA-ZÁÉÍÓÚáéíóúÑñÜü\s]/g, ''))}
+                    inputProps={{ maxLength: 40 }}
+                    error={firstNameLen < 2 || !firstNameLenOk || !firstNamePatternOk}
                     helperText={
+                      !firstNamePatternOk ? 'Solo letras.' :
                       !firstNameLenOk ? 'Máximo 40 caracteres.' :
                       firstNameLen < 2 ? 'Ingresá tu nombre.' :
                       `${firstName.length}/40`
@@ -474,10 +471,11 @@ export default function ContractorProfile() {
                   <TextField
                     label="Apellido"
                     value={lastName}
-                    onChange={e => setLastName(e.target.value)}
-                    inputProps={{ maxLength: 20 }}
-                    error={lastNameLen < 2 || !lastNameLenOk}
+                    onChange={e => setLastName(e.target.value.replace(/[^a-zA-ZÁÉÍÓÚáéíóúÑñÜü\s]/g, ''))}
+                    inputProps={{ maxLength: 40 }}
+                    error={lastNameLen < 2 || !lastNameLenOk || !lastNamePatternOk}
                     helperText={
+                      !lastNamePatternOk ? 'Solo letras.' :
                       !lastNameLenOk ? 'Máximo 40 caracteres.' :
                       lastNameLen < 2 ? 'Ingresá tu apellido.' :
                       `${lastName.length}/40`
@@ -528,8 +526,9 @@ export default function ContractorProfile() {
                     error={!phoneOk}
                     helperText={
                       !phonePatternOk ? 'Solo números, espacios, +, - y ().' :
-                      !phoneLenOk ? 'Máximo 40 caracteres.' :
-                      !phoneOk ? 'Ingresá al menos 6 dígitos.' : ' '
+                      !phoneLenOk ? 'Máximo 20 caracteres.' :
+                      !phoneOk ? 'Ingresá al menos 6 dígitos.' :
+                      `${phoneNumber.length}/20`
                     }
                     fullWidth
                   />
@@ -568,26 +567,13 @@ export default function ContractorProfile() {
         )}
       </Stack>
 
-      <Snackbar
-        open={toast.open}
-        autoHideDuration={3000}
-        onClose={() => setToast(s => ({ ...s, open: false }))}
-      >
-        <Alert
-          severity={toast.sev}
-          onClose={() => setToast(s => ({ ...s, open: false }))}
-        >
-          {toast.msg}
-        </Alert>
-      </Snackbar>
-
       <Dialog open={changePassOpen} onClose={() => setChangePassOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>Cambiar contraseña</DialogTitle>
         <DialogContent dividers>
           <ChangePasswordForm
             defaultEmail={email}
             onResult={(sev, msg) => {
-              setToast({ open: true, msg, sev })
+              notify({ severity: sev, message: msg })
               if (sev === 'success') setChangePassOpen(false)
             }}
           />

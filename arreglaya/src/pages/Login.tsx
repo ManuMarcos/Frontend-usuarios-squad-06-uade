@@ -13,17 +13,18 @@ import {
 import { useAuth } from '../auth/AuthProvider'
 import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom'
 import { homeForRole } from '../auth/routeUtils'
+import { useNotify } from '../context/Notifications'
 
 export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const from = (location.state as any)?.from?.pathname as string | undefined
+  const notify = useNotify()
 
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
   const [loading, setLoading] = React.useState(false)
-  const [error, setError] = React.useState<string | null>(null)
   const [banner, setBanner] = React.useState<{ msg: string; sev: 'warning' | 'error' | 'success' } | null>(null)
 
   React.useEffect(() => {
@@ -36,14 +37,14 @@ export default function Login() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setError(null)
     setLoading(true)
     try {
       const u = await login(email, password)
+      notify({ severity: 'success', message: 'Ingreso exitoso.' })
       if (from) navigate(from, { replace: true })
       else navigate(homeForRole(u.role), { replace: true })
     } catch (err: any) {
-      setError('Credenciales inválidas o cuenta inactiva.')
+      notify({ severity: 'error', message: 'Credenciales inválidas o cuenta inactiva.' })
     } finally {
       setLoading(false)
     }
@@ -107,12 +108,6 @@ export default function Login() {
                 {banner.msg}
               </Alert>
             )}
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
-
             <Stack component="form" spacing={2} onSubmit={onSubmit}>
               <TextField
                 size="medium"

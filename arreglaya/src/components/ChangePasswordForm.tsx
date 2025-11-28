@@ -1,9 +1,10 @@
 import React from 'react'
-import { Stack, TextField, Button, Alert, IconButton, InputAdornment } from '@mui/material'
+import { Stack, TextField, Button, IconButton, InputAdornment } from '@mui/material'
 import { changePassword } from '../api/users'
 import { isValidEmail } from '../utils/validators'
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded'
 import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded'
+import { useNotify } from '../context/Notifications'
 
 type Props = {
   defaultEmail?: string
@@ -11,11 +12,11 @@ type Props = {
 }
 
 export default function ChangePasswordForm({ defaultEmail = '', onResult }: Props) {
+  const notify = useNotify()
   const [email, setEmail] = React.useState(defaultEmail)
   const [oldPassword, setOldPassword] = React.useState('')
   const [newPassword, setNewPassword] = React.useState('')
   const [loading, setLoading] = React.useState(false)
-  const [localAlert, setLocalAlert] = React.useState<{ msg: string; sev: 'success' | 'error' } | null>(null)
   const [showOld, setShowOld] = React.useState(false)
   const [showNew, setShowNew] = React.useState(false)
 
@@ -29,36 +30,30 @@ export default function ChangePasswordForm({ defaultEmail = '', onResult }: Prop
     newPassword.trim().length >= 6 &&
     !loading
 
-  const showLocalAlert = !onResult
+  const emit = React.useCallback((sev: 'success' | 'error', msg: string) => {
+    if (onResult) onResult(sev, msg)
+    else notify({ severity: sev, message: msg })
+  }, [notify, onResult])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!isValidEmail(email)) {
-      const msg = 'Ingresá un email válido.'
-      if (onResult) onResult('error', msg)
-      else setLocalAlert({ sev: 'error', msg })
+      emit('error', 'Ingresá un email válido.')
       return
     }
     if (oldPassword.trim().length < 6 || newPassword.trim().length < 6) {
-      const msg = 'La contraseña debe tener al menos 6 caracteres.'
-      if (onResult) onResult('error', msg)
-      else setLocalAlert({ sev: 'error', msg })
+      emit('error', 'La contraseña debe tener al menos 6 caracteres.')
       return
     }
 
     setLoading(true)
-    setLocalAlert(null)
     try {
       await changePassword({ email, oldPassword, newPassword })
-      const successMsg = 'Contraseña actualizada correctamente.'
-      if (onResult) onResult('success', successMsg)
-      else setLocalAlert({ sev: 'success', msg: successMsg })
+      emit('success', 'Contraseña actualizada correctamente.')
       setOldPassword('')
       setNewPassword('')
     } catch (err: any) {
-      const msg = err?.response?.data?.message || 'No pudimos actualizar la contraseña.'
-      if (onResult) onResult('error', msg)
-      else setLocalAlert({ sev: 'error', msg })
+      emit('error', err?.response?.data?.message || 'No pudimos actualizar la contraseña.')
     } finally {
       setLoading(false)
     }
@@ -66,9 +61,6 @@ export default function ChangePasswordForm({ defaultEmail = '', onResult }: Prop
 
   return (
     <Stack component="form" spacing={2} onSubmit={handleSubmit}>
-      {showLocalAlert && localAlert && (
-        <Alert severity={localAlert.sev}>{localAlert.msg}</Alert>
-      )}
       <TextField
         label="Email"
         type="email"
