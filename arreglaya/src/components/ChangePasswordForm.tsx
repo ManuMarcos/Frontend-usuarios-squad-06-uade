@@ -1,7 +1,7 @@
 import React from 'react'
 import { Stack, TextField, Button, IconButton, InputAdornment } from '@mui/material'
 import { changePassword } from '../api/users'
-import { isValidEmail } from '../utils/validators'
+import { isValidEmail, checkPasswordCriteria } from '../utils/validators'
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded'
 import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded'
 import { useNotify } from '../context/Notifications'
@@ -24,10 +24,17 @@ export default function ChangePasswordForm({ defaultEmail = '', onResult }: Prop
     setEmail(defaultEmail)
   }, [defaultEmail])
 
+  const oldCriteria = checkPasswordCriteria(oldPassword)
+  const oldPwOk = oldCriteria.length && oldCriteria.upper && oldCriteria.lower && oldCriteria.number && oldCriteria.symbol
+  const criteria = checkPasswordCriteria(newPassword)
+  const newPwOk = criteria.length && criteria.upper && criteria.lower && criteria.number && criteria.symbol
+  const sameAsOld = newPassword.length > 0 && newPassword === oldPassword
+
   const canSubmit =
     isValidEmail(email) &&
-    oldPassword.trim().length >= 6 &&
-    newPassword.trim().length >= 6 &&
+    oldPwOk &&
+    newPwOk &&
+    !sameAsOld &&
     !loading
 
   const emit = React.useCallback((sev: 'success' | 'error', msg: string) => {
@@ -41,8 +48,16 @@ export default function ChangePasswordForm({ defaultEmail = '', onResult }: Prop
       emit('error', 'Ingresá un email válido.')
       return
     }
-    if (oldPassword.trim().length < 6 || newPassword.trim().length < 6) {
-      emit('error', 'La contraseña debe tener al menos 6 caracteres.')
+    if (!oldPwOk) {
+      emit('error', 'Usá 8+ caráct., mayús, minús, número y símbolo en la contraseña actual.')
+      return
+    }
+    if (!newPwOk) {
+      emit('error', 'Usá 8+ caráct., mayús, minús, número y símbolo.')
+      return
+    }
+    if (sameAsOld) {
+      emit('error', 'La nueva contraseña debe ser distinta a la actual.')
       return
     }
 
@@ -77,7 +92,11 @@ export default function ChangePasswordForm({ defaultEmail = '', onResult }: Prop
         type={showOld ? 'text' : 'password'}
         value={oldPassword}
         onChange={(e) => setOldPassword(e.target.value)}
-        helperText={oldPassword && oldPassword.length < 6 ? 'Mínimo 6 caracteres' : ' '}
+        helperText={
+          oldPassword && !oldPwOk
+            ? 'Usá 8+ caráct., mayús, minús, número y símbolo.'
+            : ' '
+        }
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
@@ -95,7 +114,13 @@ export default function ChangePasswordForm({ defaultEmail = '', onResult }: Prop
         type={showNew ? 'text' : 'password'}
         value={newPassword}
         onChange={(e) => setNewPassword(e.target.value)}
-        helperText={newPassword && newPassword.length < 6 ? 'Mínimo 6 caracteres' : ' '}
+        helperText={
+          sameAsOld
+            ? 'La nueva contraseña debe ser distinta a la actual.'
+            : newPassword && !newPwOk
+            ? 'Usá 8+ caráct., mayús, minús, número y símbolo.'
+            : ' '
+        }
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
