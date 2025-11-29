@@ -24,7 +24,7 @@ export type CreateUserPayload = {
   dni: string
   phoneNumber: string
   role: ApiRole
-  addresses?: AddressInfo[]
+  address?: AddressInfo[]
   barrio?: string
   profession?: string
 }
@@ -132,7 +132,8 @@ export async function changePassword(payload: { email: string; oldPassword: stri
 
 export async function adminCreateUser(payload: CreateUserPayload) {
   const token = localStorage.getItem('auth.token')
-  const { data } = await api.post('api/users/register', payload, {
+  const body = { ...payload, address: payload.address }
+  const { data } = await api.post('api/users/register', body, {
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),

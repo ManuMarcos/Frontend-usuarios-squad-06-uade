@@ -99,7 +99,7 @@ export default function AdminCreateUserDialog({ open, onClose, onCreated }: Prop
     try{
       const payload = {
         firstName, lastName, email, password, dni, phoneNumber, role,
-        addresses: addresses.filter(a => !isEmptyAddress(a)),
+        address: addresses.filter(a => !isEmptyAddress(a)),
   // barrio/profession removed from payload
       }
       const user = await adminCreateUser(payload)
