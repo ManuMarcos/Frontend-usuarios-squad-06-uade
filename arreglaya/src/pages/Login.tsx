@@ -9,7 +9,11 @@ import {
   Divider,
   Paper,
   Grid,
+  InputAdornment,
+  IconButton,
 } from '@mui/material'
+import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded'
+import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded'
 import { useAuth } from '../auth/AuthProvider'
 import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom'
 import { homeForRole } from '../auth/routeUtils'
@@ -24,6 +28,7 @@ export default function Login() {
 
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
+  const [showPassword, setShowPassword] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
   const [banner, setBanner] = React.useState<{ msg: string; sev: 'warning' | 'error' | 'success' } | null>(null)
 
@@ -119,10 +124,19 @@ export default function Login() {
               />
               <TextField
                 size="medium"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="Contraseña"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton edge="end" onClick={() => setShowPassword(s => !s)}>
+                        {showPassword ? <VisibilityOffRoundedIcon /> : <VisibilityRoundedIcon />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
                 fullWidth
                 required
               />
