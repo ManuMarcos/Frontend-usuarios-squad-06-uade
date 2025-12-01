@@ -34,17 +34,29 @@ api.interceptors.response.use(
   (error) => {
     const status = error?.response?.status
     const url = error?.config?.url || ''
+    const method = (error?.config?.method || '').toString().toLowerCase()
+    const rawMsg = error?.response?.data?.message ?? error?.response?.data ?? ''
+    const msg = String(rawMsg || '').toLowerCase()
+
+    const isUserUpdate = method === 'patch' && /api\/users\/\d+/.test(url)
     const skipAuthRedirect =
       url.includes('/api/users/change-password') ||
       url.includes('/api/users/register') ||
       url.includes('api/users/register') ||
-      url.includes('/api/users/reset-password')
-    if (skipAuthRedirect && (status === 401 || status === 403)) {
+      url.includes('/api/users/reset-password') ||
+      isUserUpdate
+
+    // Evitar invalidar sesión en 403 de validación (ej: email duplicado)
+    const isValidation403 =
+      status === 403 &&
+      !!msg &&
+      /(email|correo).*exist|registrad/.test(msg)
+
+    if (skipAuthRedirect || isValidation403) {
       return Promise.reject(error)
     }
+
     if (status === 401 || status === 403) {
-      const rawMsg = error?.response?.data?.message ?? error?.response?.data ?? ''
-      const msg = String(rawMsg).toLowerCase()
       const inactive = /inactiv|inactive|deshabilitad/.test(msg)
 
       // limpiar sesión local

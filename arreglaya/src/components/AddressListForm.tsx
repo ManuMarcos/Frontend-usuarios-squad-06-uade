@@ -214,7 +214,7 @@ export default function AddressListForm({ value, onChange, disabled }: Props) {
                     value={it.city || ''}
                     onChange={e=>setAt(i,'city',e.target.value)}
                     error={!!errors[i].city}
-                    helperText={errors[i].city || ' '}
+                    helperText={errors[i].city || `${(it.city || '').length}/40`}
                     inputProps={{ maxLength: 40 }}
                     fullWidth
                     disabled={disabled}
@@ -227,7 +227,7 @@ export default function AddressListForm({ value, onChange, disabled }: Props) {
                     value={it.street || ''}
                     onChange={e=>setAt(i,'street',e.target.value)}
                     error={!!errors[i].street}
-                    helperText={errors[i].street || ' '}
+                    helperText={errors[i].street || `${(it.street || '').length}/40`}
                     inputProps={{ maxLength: 40 }}
                     fullWidth
                     disabled={disabled}
@@ -241,7 +241,7 @@ export default function AddressListForm({ value, onChange, disabled }: Props) {
                     inputMode="numeric"
                     onChange={e=>setAt(i,'number', e.target.value.replace(/\D/g, ''))}
                     error={!!errors[i].number}
-                    helperText={errors[i].number || ' '}
+                    helperText={errors[i].number || `${(it.number || '').length}/10`}
                     inputProps={{ maxLength: 10 }}
                     fullWidth
                     disabled={disabled}
@@ -253,6 +253,7 @@ export default function AddressListForm({ value, onChange, disabled }: Props) {
                     label="Piso"
                     value={it.floor || ''}
                     onChange={e=>setAt(i,'floor',e.target.value)}
+                    helperText={`${(it.floor || '').length}/3`}
                     inputProps={{ maxLength: 3 }}
                     fullWidth
                     disabled={disabled}
@@ -264,6 +265,7 @@ export default function AddressListForm({ value, onChange, disabled }: Props) {
                     label="Depto"
                     value={it.apartment || ''}
                     onChange={e=>setAt(i,'apartment',e.target.value)}
+                    helperText={`${(it.apartment || '').length}/3`}
                     inputProps={{ maxLength: 3 }}
                     fullWidth
                     disabled={disabled}

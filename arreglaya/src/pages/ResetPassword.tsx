@@ -13,6 +13,7 @@ import {
 import { Link as RouterLink, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { resetPasswordWithToken } from '../api/users'
 import { useNotify } from '../context/Notifications'
+import { checkPasswordCriteria } from '../utils/validators'
 
 export default function ResetPassword() {
   const { token: tokenParam } = useParams<{ token?: string }>()
@@ -25,10 +26,18 @@ export default function ResetPassword() {
   const [confirmPassword, setConfirmPassword] = React.useState('')
   const [loading, setLoading] = React.useState(false)
 
-  const passTooShort = newPassword.length > 0 && newPassword.length < 6
+  const criteria = checkPasswordCriteria(newPassword)
+  const newPwOk = criteria.length && criteria.upper && criteria.lower && criteria.number && criteria.symbol
+  const passTooShort = newPassword.length > 0 && !criteria.length
   const mismatch = confirmPassword.length > 0 && confirmPassword !== newPassword
   const tokenMissing = !token
-  const canSubmit = Boolean(token && newPassword && confirmPassword && !passTooShort && !mismatch && !loading)
+  const canSubmit = Boolean(
+    token &&
+    newPwOk &&
+    confirmPassword &&
+    !mismatch &&
+    !loading
+  )
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -37,8 +46,8 @@ export default function ResetPassword() {
       notify({ severity: 'error', message: 'El enlace es inválido o expiró.' })
       return
     }
-    if (passTooShort) {
-      notify({ severity: 'error', message: 'La contraseña debe tener al menos 6 caracteres.' })
+    if (!newPwOk) {
+      notify({ severity: 'error', message: 'Usá 8+ caráct., mayús, minús, número y símbolo.' })
       return
     }
     if (mismatch) {
@@ -118,7 +127,7 @@ export default function ResetPassword() {
               Definir nueva contraseña
             </Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-              Elegí una contraseña de al menos 6 caracteres.
+              Elegí una contraseña con 8+ caracteres, mayúscula, minúscula, número y símbolo.
             </Typography>
 
             <Stack component="form" spacing={2} onSubmit={onSubmit}>
@@ -128,8 +137,12 @@ export default function ResetPassword() {
                 placeholder="Nueva contraseña"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                error={passTooShort}
-                helperText={passTooShort ? 'Debe tener al menos 6 caracteres' : ' '}
+                error={newPassword.length > 0 && !newPwOk}
+                helperText={
+                  newPassword.length > 0 && !newPwOk
+                    ? 'Usá 8+ caráct., mayús, minús, número y símbolo.'
+                    : ' '
+                }
                 fullWidth
                 required
               />
