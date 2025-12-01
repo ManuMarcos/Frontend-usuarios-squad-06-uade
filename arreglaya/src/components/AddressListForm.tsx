@@ -34,29 +34,29 @@ type Props = {
 }
 
 const ARG_PROVINCES = [
-  'Buenos Aires',
-  'Ciudad Autónoma de Buenos Aires',
+  'Buenos aires',
+  'Ciudad autónoma de buenos aires',
   'Catamarca',
   'Chaco',
   'Chubut',
   'Córdoba',
   'Corrientes',
-  'Entre Ríos',
+  'Entre ríos',
   'Formosa',
   'Jujuy',
-  'La Pampa',
-  'La Rioja',
+  'La pampa',
+  'La rioja',
   'Mendoza',
   'Misiones',
   'Neuquén',
-  'Río Negro',
+  'Río negro',
   'Salta',
-  'San Juan',
-  'San Luis',
-  'Santa Cruz',
-  'Santa Fe',
-  'Santiago del Estero',
-  'Tierra del Fuego',
+  'San juan',
+  'San luis',
+  'Santa cruz',
+  'Santa fe',
+  'Santiago del estero',
+  'Tierra del fuego',
   'Tucumán'
 ] as const
 
@@ -176,6 +176,7 @@ export default function AddressListForm({ value, onChange, disabled }: Props) {
                   <Tooltip title="Eliminar domicilio">
                     <span>
                       <IconButton
+                        component="div"
                         size="small"
                         onClick={(e) => { e.stopPropagation(); removeAt(i) }}
                         disabled={disabled}

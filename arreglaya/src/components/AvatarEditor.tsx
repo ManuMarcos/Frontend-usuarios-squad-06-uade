@@ -61,6 +61,12 @@ export default function AvatarEditor({
     void persistProfileImage(null)
   }, [persistProfileImage])
 
+  const handleClose = React.useCallback(() => {
+    setOpen(false)
+    setSuccessMsg(null)
+    setError(null)
+  }, [])
+
   return (
     <>
       <Box sx={{ position: 'relative', display: 'inline-block' }}>
@@ -97,7 +103,7 @@ export default function AvatarEditor({
         )}
       </Box>
 
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="xs" fullWidth>
+      <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth>
         <DialogTitle>Actualizar foto de perfil</DialogTitle>
         <DialogContent>
           <Stack spacing={2} alignItems="center" sx={{ mt: 1 }}>
@@ -148,7 +154,7 @@ export default function AvatarEditor({
               Quitar foto
             </Button>
           )}
-          <Button onClick={() => setOpen(false)} variant="contained">
+          <Button onClick={handleClose} variant="contained">
             Listo
           </Button>
         </DialogActions>
